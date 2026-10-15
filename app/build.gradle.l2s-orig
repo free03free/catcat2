@@ -1,0 +1,51 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'app.talkingcat'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'app.talkingcat'
+        minSdk 26
+        targetSdk 34
+        versionCode 41
+        versionName '8.27-fixes'
+        ndk { abiFilters 'arm64-v8a' }   // الجهاز arm64 فقط، لتصغير الحجم
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    // نماذج الصوت كبيرة: بلا ضغط لتسريع البناء والنسخ
+    androidResources { noCompress 'onnx', 'ort', 'json', 'mp4', 'm4a' }
+    lint { checkReleaseBuilds false; abortOnError false }
+    packaging { resources { pickFirsts += ['kotlin/**', 'META-INF/*.kotlin_module'] } }
+}
+
+// ملفات محلية يضعها fetch-engine.sh (لا تنزيل أثناء البناء)
+dependencies {
+    implementation files('libs/sherpa-onnx.jar', 'libs/kotlin-stdlib.jar')
+}
+
+// منع ازدواج Kotlin stdlib: النسخة المحلية libs/kotlin-stdlib.jar هي المعتمدة، وأي نسخة Maven تُستبعد
+configurations.configureEach {
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk7'
+    exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
+}
+
+// Gradle نفسه ينزّل المحرك ونماذج الصوت (مرة واحدة، ثم يُستعمل الكاش) قبل أي شيء آخر.
+tasks.register('fetchEngine', Exec) {
+    def root = rootProject.projectDir
+    onlyIf {
+        !(new File(root, 'app/src/main/assets/tts-pre/.complete').exists() || new File(root, 'app/src/main/assets/tts-pre/.failed').exists()) ||
+        !new File(root, 'app/libs/.engine-supertonic').exists() ||
+        !new File(root, 'app/libs/sherpa-onnx.jar').exists() ||
+        !new File(root, 'app/libs/kotlin-stdlib.jar').exists() ||
+        !new File(root, 'app/src/main/assets/models/tts-ar').isDirectory() ||
+        !new File(root, 'app/src/main/jniLibs/arm64-v8a').isDirectory()
+    }
+    workingDir root
+    commandLine 'bash', new File(root, 'fetch-engine.sh').absolutePath
+}
+tasks.named('preBuild') { dependsOn 'fetchEngine' }

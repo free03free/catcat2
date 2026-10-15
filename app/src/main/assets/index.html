@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=30">
+</head>
+<body class="lessons-on"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<radialGradient id="gHead" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="#c9d1da"/><stop offset=".55" stop-color="#96a2b1"/><stop offset="1" stop-color="#6f7c8d"/></radialGradient>
+<linearGradient id="gFur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aab4c1"/><stop offset="1" stop-color="#7a8696"/></linearGradient>
+<radialGradient id="gIris" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#c4ec78"/><stop offset="1" stop-color="#5fa823"/></radialGradient>
+</defs></svg><main class="app">
+<header class="topbar"><div><h1>🐱 قط متكلم</h1><p id="subtitle"></p></div><button id="gear" class="icon-btn" aria-label="الإعدادات">⚙️</button></header>
+<section class="mode-switch"><button id="learning-mode" class="mode active">📚 التعلم</button><button id="lessons-mode" class="mode">🔤 الدروس</button><button id="harakat-mode" class="mode">✨ الحركات</button></section>
+<section id="learning" class="mode-page active"><div id="mini-bar" class="mini-bar"><div class="fx" id="fx2"></div><button id="mini-cat-btn" class="mini-cat-btn" aria-label="اضغط على القط ليكرر"><span class="scaler"><span id="cat2" class="cat" aria-hidden="true"><svg viewBox="0 0 210 235" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<ellipse cx="105" cy="231" rx="64" ry="5" fill="#0000001f"/>
+<g class="c-tail"><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#4d5866" stroke-width="25" stroke-linecap="round"/><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#8994a3" stroke-width="18" stroke-linecap="round"/><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#5f6a77" stroke-width="18" stroke-dasharray="5 15"/></g>
+<g class="c-body"><path d="M58 236C34 204 44 150 78 138L132 138C166 150 176 204 152 236Z" fill="url(#gFur)" stroke="#4d5866" stroke-width="3.5" stroke-linejoin="round"/><path d="M82 236C74 210 84 168 105 164C126 168 136 210 128 236Z" fill="#eef1f5"/><path d="M50 190l14 4M52 206l14 3M160 190l-14 4M158 206l-14 3" stroke="#5f6a77" stroke-width="4" stroke-linecap="round"/></g>
+<g class="c-paws"><ellipse cx="84" cy="226" rx="19" ry="11" fill="#eef1f5" stroke="#4d5866" stroke-width="3"/><ellipse cx="126" cy="226" rx="19" ry="11" fill="#eef1f5" stroke="#4d5866" stroke-width="3"/><path d="M78 222v6M85 221v7M92 222v6M120 222v6M127 221v7M134 222v6" stroke="#9aa3ae" stroke-width="1.8" stroke-linecap="round"/></g>
+<g class="c-head">
+<g class="c-ear c-earL"><path d="M40 72C30 42 32 16 44 9C62 13 82 27 92 44Z" fill="url(#gFur)" stroke="#4d5866" stroke-width="3.5" stroke-linejoin="round"/><path d="M49 58C44 40 46 27 51 22C62 26 74 36 80 47Z" fill="#f4a3b5"/></g>
+<g class="c-ear c-earR"><path d="M170 72C180 42 178 16 166 9C148 13 128 27 118 44Z" fill="url(#gFur)" stroke="#4d5866" stroke-width="3.5" stroke-linejoin="round"/><path d="M161 58C166 40 164 27 159 22C148 26 136 36 130 47Z" fill="#f4a3b5"/></g>
+<ellipse cx="105" cy="90" rx="69" ry="57" fill="url(#gHead)" stroke="#4d5866" stroke-width="3.5"/>
+<path d="M105 34V54M90 37L94 54M120 37L116 54M38 86L50 89M37 98L50 100M172 86L160 89M173 98L160 100" stroke="#5b6673" stroke-width="5" stroke-linecap="round" fill="none"/>
+<ellipse cx="86" cy="115" rx="27" ry="21" fill="#f2f4f7"/><ellipse cx="124" cy="115" rx="27" ry="21" fill="#f2f4f7"/>
+<g class="c-eye"><ellipse cx="76" cy="86" rx="23" ry="26" fill="#fff" stroke="#4d5866" stroke-width="3"/><g class="c-pupil"><circle cx="78" cy="88" r="15" fill="url(#gIris)"/><circle cx="78" cy="88" r="8.5" fill="#1b1b22"/><circle cx="83" cy="82" r="4" fill="#fff"/></g></g><g class="c-eye"><ellipse cx="134" cy="86" rx="23" ry="26" fill="#fff" stroke="#4d5866" stroke-width="3"/><g class="c-pupil"><circle cx="132" cy="88" r="15" fill="url(#gIris)"/><circle cx="132" cy="88" r="8.5" fill="#1b1b22"/><circle cx="137" cy="82" r="4" fill="#fff"/></g></g>
+<path d="M97 104Q105 99 113 104Q110 114 105 116Q100 114 97 104Z" fill="#d9647d" stroke="#8a3a4c" stroke-width="1.5" stroke-linejoin="round"/>
+<path class="c-mclosed" d="M105 116V122M105 122Q97 130 88 123M105 122Q113 130 122 123" fill="none" stroke="#4a3a3a" stroke-width="2.6" stroke-linecap="round"/>
+<g class="c-mopen"><path d="M91 121Q105 118 119 121Q117 143 105 145Q93 143 91 121Z" fill="#7a1f34" stroke="#4a3a3a" stroke-width="2.2" stroke-linejoin="round"/><ellipse cx="105" cy="138" rx="9" ry="5" fill="#f08aa0"/></g>
+<path d="M72 116L18 104M70 122L16 122M72 128L22 140M138 116L192 104M140 122L194 122M138 128L188 140" stroke="#59636f" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>
+</g></svg></span></span></button><div id="speech2" class="speech mini-speech">اضغط عليّ وسأكرر لك 🔊</div></div>
+<nav class="tabs"><button class="tab active" data-page="numbers">🔢 الأرقام</button><button class="tab" data-page="letters">🔤 الحروف</button><button class="tab" data-page="colors">🎨 الألوان</button></nav>
+<section id="numbers" class="page active"><div class="page-head"><h2>🔢 تعلّم الأرقام</h2><button id="speak-number" class="speak">🔊 نطق</button></div><p class="hint">اختر رقمًا وسينطقه القط بوضوح.</p><div id="number-grid" class="grid number-grid"></div></section>
+<section id="letters" class="page"><div class="page-head"><h2>🔤 الحروف العربية</h2><button id="speak-letter" class="speak">🔊 نطق</button></div><p class="hint">اختر الحرف ثم اضغط على الأصوات.</p><div id="letter-grid" class="grid letter-grid"></div><div id="letter-detail" class="detail"></div>
+</section>
+<section id="colors" class="page"><div class="page-head"><h2>🎨 تعلّم الألوان</h2><button id="speak-color" class="speak">🔊 نطق</button></div><p class="hint">اضغط على اللون ليسمع الطفل اسمه.</p><div id="color-grid" class="color-grid"></div></section></section>
+<section id="harakat" class="mode-page"><div class="hk-wrap"><h3 class="ls-h">اختر الحرف</h3><div id="hk-letter-grid" class="grid letter-grid"></div><div id="hk-detail" class="detail"></div><div class="lesson-tools">
+<div class="lesson-box lb-harakat"><h3>الحركات</h3><div id="harakat-grid" class="mini-grid"></div></div>
+<div class="lesson-box lb-madd"><h3>المدود</h3><div id="madd-grid" class="mini-grid"></div></div>
+<div class="lesson-box lb-words"><h3>كلمات</h3><div id="word-grid" class="word-grid"></div></div>
+</div></div></section>
+<section id="lessons" class="mode-page"><div class="ls-wrap">
+<div id="ls-card" class="ls-card">
+<div class="ls-top"><span id="ls-count" class="ls-count"></span></div>
+<div class="ls-main">
+<div class="ls-side"><button id="ls-letter" class="ls-letter" type="button" aria-label="اسمع اسم الحرف">أ</button><div id="ls-name" class="ls-name">أَلِف</div></div>
+<button id="ls-pic" class="ls-pic" type="button" aria-label="اسمع الكلمة"></button>
+</div>
+<button id="ls-word" class="ls-word" type="button" aria-label="اسمع الكلمة"></button>
+<div class="ls-bottom"><button id="ls-prev" class="ls-nav" type="button" aria-label="الحرف السابق">▶</button><button id="ls-play" class="primary" type="button">🔊 اسمع الدرس</button><button id="ls-next" class="ls-nav" type="button" aria-label="الحرف التالي">◀</button></div>
+</div>
+<h3 class="ls-h">اختر الحرف</h3><p id="ls-progress" class="hint"></p><div id="ls-grid" class="ls-grid"></div>
+</div></section>
+<section id="gate" class="settings gate" hidden><div class="panel gate-panel"><h2>🔒 للكبار فقط</h2><p id="gate-q" class="gate-q"></p><div id="gate-pad" class="pad-host" hidden></div><input id="gate-in" type="text" inputmode="numeric" autocomplete="off" autocapitalize="off" spellcheck="false"><p id="gate-msg" class="gate-msg"></p><div class="gate-btns"><button id="gate-ok" class="primary" type="button">تأكيد</button><button id="gate-cancel" type="button">إلغاء</button></div></div></section>
+<section id="settings" class="settings" hidden><div class="panel"><div class="panel-head"><h2>⚙️ الإعدادات</h2><button id="close-settings">إغلاق ✕</button></div><div class="settings-tabs"><button id="settings-advanced" class="settings-tab active">📚 التعلّم</button><button id="settings-normal" class="settings-tab">🔊 الصوت</button><button id="settings-lock" class="settings-tab">🔒 القفل</button></div>
+<div id="advanced-settings" class="settings-page active">
+<h3 class="grp">🔢 الأرقام</h3>
+<div class="opt"><div class="srow"><span class="st"><b>أكبر رقم</b><small>يتعلّم الطفل من 1 إلى هذا الرقم</small></span><div class="stepper"><button id="mn-minus" type="button" aria-label="أنقص">−</button><input id="max-number" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off"><button id="mn-plus" type="button" aria-label="زِد">+</button></div></div>
+<div class="chips" id="mn-chips"><button type="button" data-n="5">5</button><button type="button" data-n="10">10</button><button type="button" data-n="20">20</button><button type="button" data-n="50">50</button><button type="button" data-n="100">100</button></div></div>
+<h3 class="grp">🔤 الحروف</h3>
+<div class="sect" id="hk-sect">
+<span class="tag">① القسم الرئيسي</span>
+<div class="opt master"><label class="srow"><span class="st"><b>قسم الحركات</b><small>أخفِه ليختفي تبويب «✨ الحركات» كاملًا من الشاشة الرئيسية</small></span><input id="enable-harakat-tab" class="sw" type="checkbox" checked></label></div>
+<div class="sect-state" id="hk-sect-state"></div>
+<div class="sect-body" id="hk-sect-body">
+<div class="sub-h"><span class="tag t2">② ما يظهر داخل القسم</span></div>
+<div class="subcard" id="hk-items">
+<div class="opt sub"><label class="srow"><span class="st"><b>الحركات</b><small>بَ بِ بُ بْ</small></span><input id="enable-harakat" class="sw" type="checkbox" checked></label></div>
+<div class="opt sub"><label class="srow"><span class="st"><b>المدود</b><small>بَا بُو بِي</small></span><input id="enable-madd" class="sw" type="checkbox" checked></label></div>
+<div class="opt sub"><label class="srow"><span class="st"><b>كلمات بسيطة</b><small>كلمة وصورة لكل حرف</small></span><input id="enable-words" class="sw" type="checkbox" checked></label></div>
+</div>
+<div class="sub-h"><span class="tag t3">③ مظهر الحركات والمدود</span></div>
+<div class="subcard" id="hk-look">
+<div class="opt sub"><label class="srow"><span class="st"><b>ألوان الحركات والمدود</b><small>لون مختلف لكل حركة ومدّ (وفي لعبة «🎧 اسمع واختر» أيضًا)</small></span><input id="enable-hk-colors" class="sw" type="checkbox" checked></label></div>
+<div class="opt sub"><label class="srow"><span class="st"><b>اسم الحركة تحت الحرف</b><small>مثل «فَتْحَة» و«مَدُّ الأَلِف»</small></span><input id="enable-hk-labels" class="sw" type="checkbox" checked></label></div>
+<div class="opt sub"><label class="srow"><span class="st"><b>حروف ضخمة جدًا</b><small>تكبير إضافي للحركات والمدود</small></span><input id="enable-hk-big" class="sw" type="checkbox"></label></div>
+<div class="opt sub"><label class="srow"><span class="st"><b>الحركات الأربع في صف واحد</b><small>بدل صفّين</small></span><input id="enable-hk-row" class="sw" type="checkbox"></label></div>
+</div>
+<button type="button" id="rst-sect" class="rst-sect">↺ استعادة افتراضيات هذا القسم كله</button>
+</div>
+<h3 class="grp">🎮 الألعاب</h3>
+<div class="opt"><label class="srow"><span class="st"><b>قسم الألعاب</b><small>أخفِه ليختفي تبويب «🎮 الألعاب» كاملًا من الشاشة الرئيسية</small></span><input id="enable-games-tab" class="sw" type="checkbox" checked></label></div>
+</div>
+</div>
+<div id="normal-settings" class="settings-page">
+<h3 class="grp">🎙️ الصوت</h3>
+<div class="opt"><label class="sfield"><b>اختيار الصوت</b><select id="voice-id"><option value="0">🐢 صوت 1</option><option value="1">⚡ صوت 2</option><option value="2">🐢 صوت 3</option><option value="3">⚡ صوت 4</option><option value="4">🐢 صوت 5</option><option value="5">🐢 صوت 6</option><option value="6">⚡ صوت 7</option><option value="7">⚡ صوت 8</option><option value="8">🐢 صوت 9</option><option value="9" selected>⚡ صوت 10 (الأوضح)</option></select></label><div class="hint" style="margin:6px 4px 0;font-size:13px;line-height:1.7;color:#806d60">⚡ مدمج: نطق سريع فوري بلا انتظار<br>🐢 غير مدمج: نطق أبطأ، يُولَّد عند أول استخدام ثم يُحفظ</div></div>
+<div class="opt"><label class="sfield"><b>جودة النطق</b><select id="tts-quality"><option value="3">سريع</option><option value="4">متوازن</option><option value="6">أوضح (أبطأ)</option><option value="8" selected>الأعلى وضوحًا (الافتراضي)</option></select></label></div>
+<div class="opt"><label class="srow"><span class="st"><b>صوت النظام</b><small>استعمال صوت الجهاز إن وُجد</small></span><input id="system-voice" class="sw" type="checkbox"></label></div>
+<button id="test-voice" type="button" class="primary">🔊 جرّب الصوت</button>
+<h3 class="grp">🎚️ المستوى والسرعة</h3>
+<div class="opt"><label class="sfield"><span class="rl"><b>مستوى الصوت</b><output id="learning-volume-value">100%</output></span><input id="learning-volume-level" type="range" min="0" max="100" step="1" value="100"></label></div>
+<div class="opt"><label class="sfield"><b>خيارات السرعة</b><select id="speed-preset"><option value="0.7">بطيء</option><option value="0.9">طبيعي (الافتراضي)</option><option value="1.15">سريع</option><option value="custom">مخصص (حسب الشريط)</option></select></label></div>
+<div class="opt"><label class="sfield"><span class="rl"><b>سرعة النطق</b><output id="speech-speed-value">0.90</output></span><input id="speech-speed" type="range" min="0.6" max="1.2" step="0.05" value="0.9"></label>
+<p class="note">سرعة أقل تساعد الطفل على سماع الكلمات بوضوح. «طبيعي (الافتراضي)» هو السرعة الجاهزة المدمجة. تغييرات الصوت تُطبَّق فورًا.</p></div>
+<div class="opt"><label class="sfield"><b>طريقة تغيير السرعة</b><select id="speed-mode"><option value="0">تلقائي (ذكي)</option><option value="1">فوري</option><option value="2">أنقى جودة</option></select></label><p class="note">تلقائي: ينطق فورًا من الصوت الجاهز بالسرعة المطلوبة، ويجهّز النسخة الأنقى في الخلفية فتُسمع من المرة التالية. فوري: يعدّل سرعة الصوت الجاهز دائمًا (بلا انتظار، وجودة أقل قليلًا). أنقى جودة: يولّد النطق بالسرعة المطلوبة دائمًا (قد يتأخر في أول مرة).</p></div>
+<h3 class="grp">💾 الأصوات المجهَّزة</h3>
+<div class="opt"><div class="io"><button id="export-sounds" type="button">⬆️ تصدير الأصوات</button><button id="import-sounds" type="button">⬇️ استيراد الأصوات</button></div>
+<p class="note">التصدير يحفظ كل الأصوات المجهَّزة في ملف zip تختار مكانه (مثل التنزيلات). الاستيراد يدمج ملفًا مصدَّرًا سابقًا فلا يعيد التطبيق تجهيزها.</p></div>
+</div>
+<div id="lock-settings" class="settings-page">
+<p class="note">الإعدادات محمية دائمًا بسؤال حسابي للكبار. يمكنك استبداله برمز سري أو بنمط.</p>
+<div class="sec"><div class="sec-t">🔢 رمز سري</div>
+<label class="sfield"><b>4 إلى 6 أرقام</b><input id="parent-pin" type="text" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="••••"></label>
+<div class="gate-btns"><button id="pin-save" type="button" class="primary">حفظ الرمز</button><button id="pin-clear" type="button">إزالة الرمز</button></div><p id="pin-msg" class="note"></p></div>
+<div class="sec"><div class="sec-t">🔷 نمط للفتح</div><p class="note">صِل 4 نقاط على الأقل ثم أعد الرسم للتأكيد.</p><div id="pat-pad" class="pad-host"></div><p id="pat-msg" class="note"></p><div class="gate-btns"><button id="pat-clear" type="button">إزالة النمط</button></div></div>
+<p class="note">إن نسيتَ الرمز أو النمط فالحل الوحيد مسح بيانات التطبيق من إعدادات الجهاز.</p></div>
+<button id="reset-all" type="button">↺ إعادة الضبط الافتراضي</button>
+<button id="save-settings" class="primary">حفظ الإعدادات</button></div></section>
+<script src="speech-data.js?v=4"></script><script src="app.js?v=43"></script><script src="games.js?v=14"></script></main></body></html>

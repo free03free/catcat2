@@ -1,0 +1,8 @@
+local.properties
+build/
+app/build/
+.gradle/
+app/libs/
+app/src/main/jniLibs/
+app/src/main/assets/models/
+app/src/main/assets/tts-pre/
