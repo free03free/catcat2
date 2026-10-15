@@ -2,8 +2,8 @@
 
 ## المتطلبات
 - JDK 17 أو أحدث
-- Android SDK (platform 35 + build-tools)، ومتغير ANDROID_HOME
-- Gradle 8.11.1 (مع AGP 8.9.1) — أو افتح المجلد في Android Studio
+- Android SDK (platform 37 + build-tools)، ومتغير ANDROID_HOME
+- Gradle 9.8.1 (عبر gradlew) مع AGP 9.4.1 وcompileSdk 37 — أو افتح المجلد في Android Studio
 - إنترنت في أول بناء فقط (لتنزيل محرك sherpa-onnx ونماذج Supertonic)
 
 ## البناء من سطر الأوامر
