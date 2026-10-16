@@ -415,7 +415,7 @@ final class EchoEngine {
         if (bt == null) return null;
         Clip bp = readPre(bt, speed);
         if (bp == null) return null;
-        float[] cut = SyllableCutter.cutWord(bp.s, bp.rate, 100);
+        float[] cut = SyllableCutter.cutWordRelaxed(bp.s, bp.rate, 100);
         return cut == null ? null : new Clip(cut, bp.rate);
     }
 
@@ -562,7 +562,7 @@ final class EchoEngine {
                     GeneratedAudio c1 = t.generateWithConfig(phs[q], g);
                     float[] raw = c1 == null ? null : c1.getSamples();
                     if (raw != null && raw.length > 0) {
-                        float[] cut = SyllableCutter.cutWord(raw, c1.getSampleRate(), q == 0 ? 100 : 150);
+                        float[] cut = SyllableCutter.cutWordRelaxed(raw, c1.getSampleRate(), q == 0 ? 100 : 150);
                         if (cut != null) { ca = c1; syllable = cut; }
                     }
                 }

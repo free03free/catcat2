@@ -96,7 +96,7 @@ def carriers(c):
 def carrier(c): return carriers(c)[0]
 
 # اسم الحرف وحده (تَاء) ينطقه النموذج ناقصًا؛ فنولّد «الاسم ، ، ، كلمته» (مقاطع وضع الدروس) ونقتطع الاسم فقط.
-NAME_WORD = {"أَلِف": "أَسَد", "بَاء": "بَقَرَة", "تَاء": "تَمْرْ", "ثَاء": "ثَعْلَب", "جِيم": "جَمَل", "حَاء": "حِصَان", "خَاء": "خَرُوف", "دَال": "دُبْ", "ذَال": "ذُرَة", "رَاء": "رُمَّان", "زَاي": "زَرَافَة", "سِين": "سَمَكَة", "شِين": "شَمْس", "صَاد": "صَارُوخ", "ضَاد": "ضِفْدَع", "طَاء": "طَائِر", "ظَاء": "ظَرْف", "عَيْن": "عِنَب", "غَيْن": "غَيْمَه", "فَاء": "فِيل", "قَاف": "قِطَّة", "كَاف": "كَلْبْ", "لَام": "لَيْمُون", "مِيم": "مَوْز", "نُون": "نَحْلَه", "هَاء": "هِلَال", "وَاو": "وَرْدَة", "يَاء": "يَد"}
+NAME_WORD = {"أَلِف": "أَسَد", "بَاء": "بَقَرَة", "تَاء": "تَمْرْ", "ثَاء": "ثَعْلَب", "جِيم": "جَمَل", "حَاء": "حِصَان", "خَاء": "خَرُوف", "دَال": "دُبْ", "ذَال": "ذُرَه", "رَاء": "رُمَّان", "زَاي": "زَرَافَة", "سِين": "سَمَكَة", "شِين": "شَمْس", "صَاد": "صَارُوخ", "ضَاد": "ضِفْدَع", "طَاء": "طَائِر", "ظَاء": "ظَرْف", "عَيْن": "عِنَب", "غَيْن": "غَيْمَه", "فَاء": "فِيل", "قَاف": "قِطَّة", "كَاف": "كَلْبْ", "لَام": "لَيْمُون", "مِيم": "مَوْز", "نُون": "نَحْلَه", "هَاء": "هِلَال", "وَاو": "وَرْدَة", "يَاء": "يَد"}
 NAME_WORD.update({"تَا": "تَمْرْ", "فَا": "فِيل"})  # صيغة المد المنطوقة لاسمي ت وف (انظر SAY في speech-data.js)
 # كلمة الصورة وحدها (بَقَرَة) ينطقها النموذج أحيانًا خطأ منفردة، وتخرج سليمة بعد اسم حرفها («بَاء ، ، ، بَقَرَة»).
 # فنولّد العبارة ونقتطع الكلمة (ما بعد أطول وقفة) ونتحقق منها بـ Whisper، وإن لم تجتز نرجع إلى توليدها وحدها.
@@ -110,7 +110,10 @@ def decode_m4a(path):
 def word_phrases(c):
     n = WORD_NAME[c]
     # الأولى بصيغة «الحرف، الكلمة» نفسها التي يسمعها الطفل سليمة في التطبيق (حصان بكسرة الحاء، عنب بكسرة العين، رمان بضمة الراء، ذرة بالتاء المربوطة)
-    return [f"{n}، {c}", f"{n} ، ، ، {c}", f"{n} ، ، {c}"]
+    ph = [f"{n}، {c}", f"{n} ، ، ، {c}", f"{n} ، ، {c}"]
+    h = ta_to_ha(c)
+    if h: ph += [f"{n}، {h}", f"{n} ، ، ، {h}"]   # بديل: الهاء بدل التاء المربوطة
+    return ph
 def cut_word(s, sr, gap_ms=90, min_pause_ms=150):
     """الكلمة بعد اسم الحرف: ما بعد أطول وقفة بين المقطعين إلى آخر صوت. (مقطع صالح، نجح الاقتطاع). يطابق cutWord في SyllableCutter.java."""
     fr = int(sr * 0.01); n = len(s) // fr
@@ -132,6 +135,15 @@ def cut_word(s, sr, gap_ms=90, min_pause_ms=150):
     seg = s[a:b].copy(); f = int(sr * 0.006)
     if len(seg) > 2 * f: seg[:f] *= np.linspace(0, 1, f).astype(np.float32); seg[-f:] *= np.linspace(1, 0, f).astype(np.float32)
     return seg, True
+def cut_word_relaxed(s, sr, first_pause=150):
+    """يجرّب وقفات أقصر تدريجيًا قبل الاستسلام (ذُرَة كانت تفشل عند 100 مللي). تطابق cutWordRelaxed في SyllableCutter.java."""
+    for pm in [first_pause, 100, 70, 50, 35]:
+        if pm > first_pause: continue
+        seg, ok = cut_word(s, sr, gap_ms=min(90, pm), min_pause_ms=pm)
+        if ok: return seg, True
+    return s, False
+def ta_to_ha(c):  # الكلمات المنتهية بتاء مربوطة: بديل ينطق نهايتها هاءً (ذُرَة ← ذُرَه)
+    return c[:-1] + "\u0647" if c.endswith("\u0629") else None
 def name_phrases(c):
     w = NAME_WORD[c]
     return [f"{c} ، ، ، {w}", f"{c} ، ، ، ، {w}", f"{c} ، ، {w}"]
@@ -222,7 +234,7 @@ if a.max_num: items = [r for r in items if len(r) < 3 or r[2] <= a.max_num]
 if a.start or a.limit: items = items[a.start:(a.start + a.limit) if a.limit else None]
 def item_key(r): return f"{int(r[1] * 100 + 0.5)}|{clean(r[0])}"
 WANT = {item_key(r) for r in items}
-WORDCUT = 3   # رقم طريقة توليد كلمة الصورة وحدها؛ إن اختلف عمّا في الفهرس القديم أُعيد توليد هذه الكلمات فقط
+WORDCUT = 5   # رقم طريقة توليد كلمة الصورة وحدها؛ إن اختلف عمّا في الفهرس القديم أُعيد توليد هذه الكلمات فقط
 WORDKEYS = {item_key(r) for r in items if (len(r) < 3 or r[2] is None) and clean(r[0]) in WORD_NAME and not syl_kind(clean(r[0]))}
 
 def load_idx(p):
@@ -303,14 +315,15 @@ def work(task):
             bf = os.path.join(od, index["items"].get(bk, ""))
             if bk in index["items"] and os.path.isfile(bf):
                 try:
-                    seg, okc = cut_word(decode_m4a(bf), 22050, min_pause_ms=100)
+                    seg, okc = cut_word_relaxed(decode_m4a(bf), 22050, 100)
+                    if not okc: print("فشل اقتطاع الكلمة من مقطع الحرف:", c, flush=True)
                     if okc:
                         sc0 = 1.0 if not rec else score(c, num, transcribe(seg, 22050))
                         if sc0 >= 0.75: best = (seg, sc0, "")
                 except Exception as ex: print("تعذّر اقتطاع", c, ex, flush=True)
         if wd:   # كلمة صورة: ثم مقتطعة من «الاسم ، ، ، الكلمة» (مضمونة النطق كما مع الحرف)، ثم وحدها كاحتياط
             ph = word_phrases(c); nodiac = re.sub("[\u064B-\u065F\u0670]", "", c)
-            cands = [("cut", ph[0]), ("cut", ph[1]), ("cut", ph[0]), ("cut", ph[1]), ("cut", ph[2]), ("dir", c), ("dir", nodiac)]
+            cands = [("cut", ph[0]), ("cut", ph[1]), ("cut", ph[0]), ("cut", ph[1]), ("cut", ph[2])] + [("cut", x) for x in ph[3:]] + [("dir", c), ("dir", nodiac)]
         ntries = (0 if best else len(cands)) if wd else ((max(a.tries, min(10, a.tries * 2)) if syl else a.tries) if rec else 1)
         for attempt in range(1, ntries + 1):
             g = sherpa_onnx.GenerationConfig(); g.sid = voice; g.speed = float(sp); g.num_steps = a.steps; g.extra = {"lang": "ar"}
@@ -319,7 +332,7 @@ def work(task):
             kind, txt = cands[attempt - 1] if wd else ("", vs[(attempt - 1) % len(vs)])
             r = tts.generate(txt, g)
             raw = np.asarray(r.samples, dtype=np.float32)
-            if wd and kind == "cut": s, okdur = cut_word(raw, r.sample_rate, min_pause_ms=(100 if txt == word_phrases(c)[0] else 150))
+            if wd and kind == "cut": s, okdur = cut_word_relaxed(raw, r.sample_rate, 100 if txt == word_phrases(c)[0] else 150)
             elif nm: s, okdur = cut_name(raw, r.sample_rate)
             elif syl: s, okdur = cut_last(raw, r.sample_rate, max_syl_dur(c))
             else: s, okdur = trim(raw, r.sample_rate), True

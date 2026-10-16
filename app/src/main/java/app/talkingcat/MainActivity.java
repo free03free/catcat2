@@ -42,6 +42,9 @@ public class MainActivity extends Activity {
         bumpScreen();
         web = new WebView(this);
         web.setBackgroundColor(0xFFFFF4DC);
+        web.setLongClickable(false);                       // منع قائمة النسخ والمشاركة والبحث عند الضغط المطوّل
+        web.setHapticFeedbackEnabled(false);
+        web.setOnLongClickListener(v -> true);
         setContentView(web);
 
         WebSettings s = web.getSettings();

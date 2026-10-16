@@ -111,7 +111,7 @@ final class SyllableCutter {
         {"حَاء", "حِصَان"},
         {"خَاء", "خَرُوف"},
         {"دَال", "دُبْ"},
-        {"ذَال", "ذُرَة"},
+        {"ذَال", "ذُرَه"},
         {"رَاء", "رُمَّان"},
         {"زَاي", "زَرَافَة"},
         {"سِين", "سَمَكَة"},
@@ -204,12 +204,28 @@ final class SyllableCutter {
     /** عبارات الحامل: الأولى بصيغة «الحرف، الكلمة» نفسها التي ينطقها النموذج سليمة. يطابق word_phrases. */
     static String[] wordPhrases(String w) {
         String n = wordName(w);
+        if (w.endsWith("\u0629")) {   // بديل: الهاء بدل التاء المربوطة (ذُرَة ← ذُرَه)
+            String h = w.substring(0, w.length() - 1) + "\u0647";
+            return new String[]{n + "، " + w, n + " ، ، ، " + w, n + " ، ، " + w, n + "، " + h, n + " ، ، ، " + h};
+        }
         return new String[]{n + "، " + w, n + " ، ، ، " + w, n + " ، ، " + w};
     }
 
     /** الكلمة بعد اسم الحرف: ما بعد أطول وقفة (minPauseMs فأكثر) إلى آخر صوت؛ null إن لم تُوجد وقفة أو كانت المدة غير معقولة (0.2–1.8 ث). يطابق cut_word في tools/pregen.py. */
-    static float[] cutWord(float[] s, int sr, int minPauseMs) {
-        final int gapMs = 90;
+    /** يجرّب وقفات أقصر تدريجيًا (تطابق cut_word_relaxed في pregen.py). */
+    static float[] cutWordRelaxed(float[] s, int sr, int firstPauseMs) {
+        int[] ps = {150, 100, 70, 50, 35};
+        for (int pm : ps) {
+            if (pm > firstPauseMs) continue;
+            float[] r = cutWord(s, sr, pm, Math.min(90, pm));
+            if (r != null) return r;
+        }
+        return null;
+    }
+
+    static float[] cutWord(float[] s, int sr, int minPauseMs) { return cutWord(s, sr, minPauseMs, 90); }
+
+    static float[] cutWord(float[] s, int sr, int minPauseMs, int gapMs) {
         int fr = (int) (sr * 0.01);
         if (fr < 1) return null;
         int n = s.length / fr;

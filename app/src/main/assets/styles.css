@@ -256,16 +256,7 @@ body:not(.hk-nocolor) .md-ya{background:#cdf3f1;color:#0a6b66}
 .mode-switch .mode{flex:1 1 0;min-width:0}
 .gear-mini{order:99;flex:0 0 46px;border:0;border-radius:15px;background:#fff;font-size:21px;padding:0;color:#594536}
 .gear-mini:active{background:#fff0c8}
-.tabs{gap:8px;margin:12px 0}
-.tab{--c:#555;--bg:#fff;--sh:#0003;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:96px;padding:10px 4px 8px;border:3px solid var(--c);border-radius:22px;background:var(--bg);color:var(--c);font-weight:900;transition:transform .12s,box-shadow .12s}
-.tab .ti{font-size:36px;line-height:1.15;font-weight:900;display:flex;align-items:center;justify-content:center;min-height:42px;direction:ltr}
-.tab .tl{font-size:16px}
-.tab.active{background:var(--c);color:#fff;transform:translateY(-3px);box-shadow:0 8px 16px var(--sh)}
-.tab .rb{display:inline-block;width:38px;height:38px;border-radius:50%;background:conic-gradient(#e74c3c,#f1c40f,#2ecc71,#3498db,#9b59b6,#e74c3c);border:3px solid #fff;box-shadow:0 0 0 2px var(--c)}
-.tab.active .rb{box-shadow:0 0 0 2px #fff}
-.t-num{--c:#1e6fd9;--bg:#e4f0ff;--sh:#1e6fd966}
-.t-let{--c:#1f9d3a;--bg:#e3f7e4;--sh:#1f9d3a66}
-.t-col{--c:#e0457f;--bg:#ffe6f0;--sh:#e0457f66}
-#numbers{border:3px solid #1e6fd9}#numbers h2{color:#1e6fd9}
-#letters{border:3px solid #1f9d3a}#letters h2{color:#1f9d3a}
-#colors{border:3px solid #e0457f}#colors h2{color:#e0457f}
+
+/* منع تحديد النص ونسخه في التطبيق كله (يبقى التحرير في خانات الإدخال) */
+html,body,*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input,textarea{-webkit-user-select:text;user-select:text}

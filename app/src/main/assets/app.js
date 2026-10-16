@@ -282,3 +282,6 @@ $("test-voice").onclick=()=>{applyLive();talk("مَرْحَبًا أَنَا ا�
  document.addEventListener("click",()=>setTimeout(sync,0),true)})();
 renderNumbers();renderLetters();renderColors();bind();bindCat($("cat2"));startIdle();setMode("learning",true);
 })();
+
+document.addEventListener("contextmenu",e=>e.preventDefault());
+document.addEventListener("selectstart",e=>{const t=e.target;if(!(t&&t.closest&&t.closest("input,textarea")))e.preventDefault()});
