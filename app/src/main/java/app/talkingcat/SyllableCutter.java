@@ -124,7 +124,7 @@ final class SyllableCutter {
         {"غَيْن", "غَيْمَه"},
         {"فَاء", "فِيل"},
         {"قَاف", "قِطَّة"},
-        {"كَاف", "كَلْب"},
+        {"كَاف", "كَلْبْ"},
         {"لَام", "لَيْمُون"},
         {"مِيم", "مَوْز"},
         {"نُون", "نَحْلَه"},
@@ -193,6 +193,12 @@ final class SyllableCutter {
         if ("تَمْرْ".equals(t)) return "تَا";
         if ("فِيل".equals(t)) return "فَا";
         for (String[] r : NAME_WORD) if (r[1].equals(t)) return r[0];
+        return null;
+    }
+    /** «اسم الحرف، الكلمة» الكامل كما في وضع الدروس (بَاء، بَقَرَة)؛ null إن لم تكن كلمة درس. يطابق BOTH_TEXT في tools/pregen.py. */
+    static String bothText(String w) {
+        if (w == null) return null;
+        for (String[] r : NAME_WORD) if (r[1].equals(w)) return r[0] + "، " + w;
         return null;
     }
     /** عبارات الحامل: الأولى بصيغة «الحرف، الكلمة» نفسها التي ينطقها النموذج سليمة. يطابق word_phrases. */

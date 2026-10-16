@@ -96,11 +96,17 @@ def carriers(c):
 def carrier(c): return carriers(c)[0]
 
 # اسم الحرف وحده (تَاء) ينطقه النموذج ناقصًا؛ فنولّد «الاسم ، ، ، كلمته» (مقاطع وضع الدروس) ونقتطع الاسم فقط.
-NAME_WORD = {"أَلِف": "أَسَد", "بَاء": "بَقَرَة", "تَاء": "تَمْرْ", "ثَاء": "ثَعْلَب", "جِيم": "جَمَل", "حَاء": "حِصَان", "خَاء": "خَرُوف", "دَال": "دُبْ", "ذَال": "ذُرَة", "رَاء": "رُمَّان", "زَاي": "زَرَافَة", "سِين": "سَمَكَة", "شِين": "شَمْس", "صَاد": "صَارُوخ", "ضَاد": "ضِفْدَع", "طَاء": "طَائِر", "ظَاء": "ظَرْف", "عَيْن": "عِنَب", "غَيْن": "غَيْمَه", "فَاء": "فِيل", "قَاف": "قِطَّة", "كَاف": "كَلْب", "لَام": "لَيْمُون", "مِيم": "مَوْز", "نُون": "نَحْلَه", "هَاء": "هِلَال", "وَاو": "وَرْدَة", "يَاء": "يَد"}
+NAME_WORD = {"أَلِف": "أَسَد", "بَاء": "بَقَرَة", "تَاء": "تَمْرْ", "ثَاء": "ثَعْلَب", "جِيم": "جَمَل", "حَاء": "حِصَان", "خَاء": "خَرُوف", "دَال": "دُبْ", "ذَال": "ذُرَة", "رَاء": "رُمَّان", "زَاي": "زَرَافَة", "سِين": "سَمَكَة", "شِين": "شَمْس", "صَاد": "صَارُوخ", "ضَاد": "ضِفْدَع", "طَاء": "طَائِر", "ظَاء": "ظَرْف", "عَيْن": "عِنَب", "غَيْن": "غَيْمَه", "فَاء": "فِيل", "قَاف": "قِطَّة", "كَاف": "كَلْبْ", "لَام": "لَيْمُون", "مِيم": "مَوْز", "نُون": "نَحْلَه", "هَاء": "هِلَال", "وَاو": "وَرْدَة", "يَاء": "يَد"}
 NAME_WORD.update({"تَا": "تَمْرْ", "فَا": "فِيل"})  # صيغة المد المنطوقة لاسمي ت وف (انظر SAY في speech-data.js)
 # كلمة الصورة وحدها (بَقَرَة) ينطقها النموذج أحيانًا خطأ منفردة، وتخرج سليمة بعد اسم حرفها («بَاء ، ، ، بَقَرَة»).
 # فنولّد العبارة ونقتطع الكلمة (ما بعد أطول وقفة) ونتحقق منها بـ Whisper، وإن لم تجتز نرجع إلى توليدها وحدها.
 WORD_NAME = {w: n for n, w in NAME_WORD.items()}   # التاء والفاء: الصيغة الأخيرة (تَا، فَا) هي الأصل لأنها المنطوقة فعلًا
+# نص «اسم الحرف، الكلمة» الكامل لكل كلمة درس (كما في وضع الدروس: «بَاء، بَقَرَة»). كلمة الصورة وحدها تؤخذ من ذيل هذا المقطع الجاهز نفسه
+BOTH_TEXT = {NAME_WORD[nm]: f"{nm}، {NAME_WORD[nm]}" for nm in _NAMES}
+BOTH_WORD = {v: k for k, v in BOTH_TEXT.items()}
+def decode_m4a(path):
+    out = subprocess.run([FF, "-loglevel", "error", "-i", path, "-f", "f32le", "-ar", "22050", "-ac", "1", "-"], capture_output=True, check=True).stdout
+    return np.frombuffer(out, dtype="<f4").copy()
 def word_phrases(c):
     n = WORD_NAME[c]
     # الأولى بصيغة «الحرف، الكلمة» نفسها التي يسمعها الطفل سليمة في التطبيق (حصان بكسرة الحاء، عنب بكسرة العين، رمان بضمة الراء، ذرة بالتاء المربوطة)
@@ -216,7 +222,7 @@ if a.max_num: items = [r for r in items if len(r) < 3 or r[2] <= a.max_num]
 if a.start or a.limit: items = items[a.start:(a.start + a.limit) if a.limit else None]
 def item_key(r): return f"{int(r[1] * 100 + 0.5)}|{clean(r[0])}"
 WANT = {item_key(r) for r in items}
-WORDCUT = 2   # رقم طريقة توليد كلمة الصورة وحدها؛ إن اختلف عمّا في الفهرس القديم أُعيد توليد هذه الكلمات فقط
+WORDCUT = 3   # رقم طريقة توليد كلمة الصورة وحدها؛ إن اختلف عمّا في الفهرس القديم أُعيد توليد هذه الكلمات فقط
 WORDKEYS = {item_key(r) for r in items if (len(r) < 3 or r[2] is None) and clean(r[0]) in WORD_NAME and not syl_kind(clean(r[0]))}
 
 def load_idx(p):
@@ -262,7 +268,16 @@ def work(task):
         return st.result.text.strip()
     od = os.path.join(a.out, f"v{voice}"); os.makedirs(od, exist_ok=True)
     # كل عملية تعالج حصتها فقط (n % shards == shard) وتكتب فهرسها الجزئي؛ ويُدمج الجميع في index.json بعد الانتهاء
-    my_items = [r for n, r in enumerate(items) if n % a.shards == shard]
+    import zlib
+    def grp(n, r):   # كلمة الدرس ومقطع «الحرف، الكلمة» الخاص بها في العملية نفسها كي يتوفر المقطع عند اقتطاع الكلمة
+        c0 = clean(r[0])
+        if len(r) < 3 or r[2] is None:
+            if c0 in WORD_NAME: return zlib.crc32(c0.encode("utf-8"))
+            if c0 in BOTH_WORD: return zlib.crc32(BOTH_WORD[c0].encode("utf-8"))
+        return n
+    my_items = [r for n, r in enumerate(items) if grp(n, r) % a.shards == shard]
+    is_wd = lambda r: (len(r) < 3 or r[2] is None) and clean(r[0]) in WORD_NAME and not syl_kind(clean(r[0]))
+    my_items = [r for r in my_items if not is_wd(r)] + [r for r in my_items if is_wd(r)]   # الكلمات وحدها بعد مقاطعها
     mine = {item_key(r) for r in my_items}
     ip = os.path.join(od, "index.json" if a.shards == 1 else f"index.s{shard}.json")
     index = {"rate": 22050, "format": "m4a", "steps": a.steps, "voice": voice, "wordcut": WORDCUT, "items": {}, "weak": {}}
@@ -283,10 +298,20 @@ def work(task):
         best = None
         syl = bool(syl_kind(c)) or c in NAME_WORD
         wd = (num is None) and (c in WORD_NAME) and not syl
-        if wd:   # كلمة صورة: أولًا مقتطعة من «الاسم ، ، ، الكلمة» (مضمونة النطق كما مع الحرف)، ثم وحدها كاحتياط
+        if wd:   # أولًا: ذيل مقطع «الحرف، الكلمة» الجاهز نفسه (النطق الذي يسمعه الطفل سليمًا)؛ إن لم يصلح فالتوليد أدناه
+            bk = f"{int(sp * 100 + 0.5)}|{clean(BOTH_TEXT[c])}"
+            bf = os.path.join(od, index["items"].get(bk, ""))
+            if bk in index["items"] and os.path.isfile(bf):
+                try:
+                    seg, okc = cut_word(decode_m4a(bf), 22050, min_pause_ms=100)
+                    if okc:
+                        sc0 = 1.0 if not rec else score(c, num, transcribe(seg, 22050))
+                        if sc0 >= 0.75: best = (seg, sc0, "")
+                except Exception as ex: print("تعذّر اقتطاع", c, ex, flush=True)
+        if wd:   # كلمة صورة: ثم مقتطعة من «الاسم ، ، ، الكلمة» (مضمونة النطق كما مع الحرف)، ثم وحدها كاحتياط
             ph = word_phrases(c); nodiac = re.sub("[\u064B-\u065F\u0670]", "", c)
             cands = [("cut", ph[0]), ("cut", ph[1]), ("cut", ph[0]), ("cut", ph[1]), ("cut", ph[2]), ("dir", c), ("dir", nodiac)]
-        ntries = len(cands) if wd else ((max(a.tries, min(10, a.tries * 2)) if syl else a.tries) if rec else 1)
+        ntries = (0 if best else len(cands)) if wd else ((max(a.tries, min(10, a.tries * 2)) if syl else a.tries) if rec else 1)
         for attempt in range(1, ntries + 1):
             g = sherpa_onnx.GenerationConfig(); g.sid = voice; g.speed = float(sp); g.num_steps = a.steps; g.extra = {"lang": "ar"}
             syl = bool(syl_kind(c)); nm = c in NAME_WORD

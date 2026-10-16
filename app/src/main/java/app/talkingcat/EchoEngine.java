@@ -410,6 +410,15 @@ final class EchoEngine {
         return c;
     }
 
+    private Clip wordFromPack(String word, float speed) {
+        String bt = SyllableCutter.bothText(word);
+        if (bt == null) return null;
+        Clip bp = readPre(bt, speed);
+        if (bp == null) return null;
+        float[] cut = SyllableCutter.cutWord(bp.s, bp.rate, 100);
+        return cut == null ? null : new Clip(cut, bp.rate);
+    }
+
     /** يفكّ مقاطع اللعبة مسبقًا في الذاكرة فيصير النطق فوريًا. */
     void warm(final String[] texts, final float[] speeds) {
         new Thread(() -> {
@@ -518,6 +527,11 @@ final class EchoEngine {
         synchronized (cache) { Clip hit = cache.get(key); if (hit != null) return hit; }
         Clip d = readDisk(key);
         if (d != null) { synchronized (cache) { cache.put(key, d); } return d; }
+        if (SyllableCutter.wordName(text) != null) {
+            // كلمة صورة الدرس: نأخذها من ذيل مقطع «الحرف، الكلمة» الجاهز نفسه إن وُجد بهذه السرعة (نطق مضمون كما يسمعه الطفل)
+            Clip wp = wordFromPack(text, speed);
+            if (wp != null) { synchronized (cache) { cache.put(key, wp); } return wp; }
+        }
         GeneratedAudio a;
         float[] syllable = null;   // مقطع (بَ، أَبْ، بَا): يُقتطع من جملة حاملة كما في tools/pregen.py
         final java.util.concurrent.locks.ReentrantLock lk = ownLock != null ? ownLock : genLock;

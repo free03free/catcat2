@@ -2,15 +2,15 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=30">
+<meta name="theme-color" content="#fff4dc"><title>قط متكلم</title><link rel="stylesheet" href="styles.css?v=31">
 </head>
 <body class="lessons-on"><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <radialGradient id="gHead" cx=".35" cy=".28" r=".85"><stop offset="0" stop-color="#c9d1da"/><stop offset=".55" stop-color="#96a2b1"/><stop offset="1" stop-color="#6f7c8d"/></radialGradient>
 <linearGradient id="gFur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#aab4c1"/><stop offset="1" stop-color="#7a8696"/></linearGradient>
 <radialGradient id="gIris" cx=".4" cy=".35" r=".8"><stop offset="0" stop-color="#c4ec78"/><stop offset="1" stop-color="#5fa823"/></radialGradient>
 </defs></svg><main class="app">
-<header class="topbar"><div><h1>🐱 قط متكلم</h1><p id="subtitle"></p></div><button id="gear" class="icon-btn" aria-label="الإعدادات">⚙️</button></header>
-<section class="mode-switch"><button id="learning-mode" class="mode active">📚 التعلم</button><button id="lessons-mode" class="mode">🔤 الدروس</button></section>
+<p id="subtitle" hidden></p>
+<section class="mode-switch"><button id="learning-mode" class="mode active">📚 التعلم</button><button id="lessons-mode" class="mode">🔤 الدروس</button><button id="gear" class="gear-mini" aria-label="الإعدادات">⚙️</button></section>
 <section id="learning" class="mode-page active"><div id="mini-bar" class="mini-bar"><div class="fx" id="fx2"></div><button id="mini-cat-btn" class="mini-cat-btn" aria-label="اضغط على القط ليكرر"><span class="scaler"><span id="cat2" class="cat" aria-hidden="true"><svg viewBox="0 0 210 235" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
 <ellipse cx="105" cy="231" rx="64" ry="5" fill="#0000001f"/>
 <g class="c-tail"><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#4d5866" stroke-width="25" stroke-linecap="round"/><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#8994a3" stroke-width="18" stroke-linecap="round"/><path d="M148 214C200 214 214 160 184 132" fill="none" stroke="#5f6a77" stroke-width="18" stroke-dasharray="5 15"/></g>
@@ -28,7 +28,7 @@
 <g class="c-mopen"><path d="M91 121Q105 118 119 121Q117 143 105 145Q93 143 91 121Z" fill="#7a1f34" stroke="#4a3a3a" stroke-width="2.2" stroke-linejoin="round"/><ellipse cx="105" cy="138" rx="9" ry="5" fill="#f08aa0"/></g>
 <path d="M72 116L18 104M70 122L16 122M72 128L22 140M138 116L192 104M140 122L194 122M138 128L188 140" stroke="#59636f" stroke-width="1.8" stroke-linecap="round" opacity=".8"/>
 </g></svg></span></span></button><div id="speech2" class="speech mini-speech">اضغط عليّ وسأكرر لك 🔊</div></div>
-<nav class="tabs"><button class="tab active" data-page="numbers">🔢 الأرقام</button><button class="tab" data-page="letters">🔤 الحروف</button><button class="tab" data-page="colors">🎨 الألوان</button></nav>
+<nav class="tabs"><button class="tab t-num active" data-page="numbers"><span class="ti">123</span><span class="tl">الأرقام</span></button><button class="tab t-let" data-page="letters"><span class="ti">أ ب</span><span class="tl">الحروف</span></button><button class="tab t-col" data-page="colors"><span class="ti"><i class="rb"></i></span><span class="tl">الألوان</span></button></nav>
 <section id="numbers" class="page active"><div class="page-head"><h2>🔢 تعلّم الأرقام</h2><button id="speak-number" class="speak">🔊 نطق</button></div><p class="hint">اختر رقمًا وسينطقه القط بوضوح.</p><div id="number-grid" class="grid number-grid"></div></section>
 <section id="letters" class="page"><div class="page-head"><h2>🔤 الحروف العربية</h2><button id="speak-letter" class="speak">🔊 نطق</button></div><p class="hint">اختر الحرف ثم اضغط على الأصوات.</p><div id="letter-grid" class="grid letter-grid"></div><div id="letter-detail" class="detail"></div>
 </section>
