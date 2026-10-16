@@ -85,7 +85,7 @@ if [ "${SKIP_PREGEN:-0}" != "1" ] && [ ! -f "$PRE/.complete" ]; then
         rm -f "$CACHE/whisper-small.tar.bz2"
       fi
       echo "توليد الأصوات الجاهزة (حدّ ${PREGEN_MINUTES:-25} دقيقة في هذا البناء)…"
-      "$PY" tools/pregen.py --voices "${PREGEN_VOICES:-9,1,3,6,7}" --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" --asr-dir "$W" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
+      "$PY" tools/pregen.py --voices "${PREGEN_VOICES:-9,1,3,6,7}" --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" --shards "${PREGEN_SHARDS:-1}" --tries "${PREGEN_TRIES:-6}" --asr-dir "$W" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
     else
       echo "تعذّر تثبيت sherpa-onnx لبايثون؛ سيُولَّد الصوت وقت التشغيل. (احذف $PRE/.failed لإعادة المحاولة)"; echo "pip failed" > "$PRE/.failed"
     fi

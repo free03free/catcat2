@@ -127,7 +127,12 @@
   }
 
   /* نطق خاص بكلمات يخطئ فيها المحرك عند ختمها بتاء مربوطة */
-  var SAY = { "نَحْلَة": "نَحْلَه", "غَيْمَة": "غَيْمَه", "دُبّ": "دُبْ", "تَمْر": "تَمْرْ" };
+  var SAY = { "نَحْلَة": "نَحْلَه", "غَيْمَة": "غَيْمَه", "دُبّ": "دُبْ", "تَمْر": "تَمْرْ",
+    /* همزة «اء» الأخيرة غير مستقرة في المحرك (تَاء ← «تام»، فَاء ← «فام»): نُنطق اسم الحرف بصيغة المد «تَا»/«فَا» */
+    "تَاء": "تَا", "فَاء": "فَا" };
+  /* سرعة خاصة لكلمات يخطئ المحرك في جيمها عند السرعة العادية: «بَنَفْسَجِي» تُنطق مرة واحدة بسرعة أبطأ فيثبت الجيم (عند 0.9 يخرج أحيانًا «بنفسدي») */
+  var SAY_SPEED = { "بَنَفْسَجِي": 0.75 };
+
 
   /* كلمات يخطئ المحرك في نطقها منفردة؛ تُنطق مع اسم الحرف كما في «الحرف، الكلمة» الذي ينطقها صحيحًا (مقطع جاهز أصلًا) */
   var SAY_SOLO = {};
@@ -135,7 +140,7 @@
   var api = {
     letters: letters, colors: colors, words: words, lessonWords: lessonWords, pics: pics, pictures: pictures,
     harakat: harakat, madds: madds, vowelSyl: vowelSyl, sukunSyl: sukunSyl, maddSyl: maddSyl, sylKind: sylKind, showSyl: showSyl,
-    ones: ones, tens: tens, numberWord: numberWord, SAY: SAY, SAY_SOLO: SAY_SOLO
+    ones: ones, tens: tens, numberWord: numberWord, SAY: SAY, SAY_SOLO: SAY_SOLO, SAY_SPEED: SAY_SPEED
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.CatSpeech = api;

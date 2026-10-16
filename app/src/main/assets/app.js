@@ -4,18 +4,18 @@ const KEY="learningMaxNumber", REPEAT_KEY="repeatEnabled", SPEED_KEY="speechSpee
 const FEATURE_KEY="learningFeatures";
 let maxNumber=parseInt(localStorage.getItem(KEY)||"10",10);
 if(!Number.isFinite(maxNumber)||maxNumber<1)maxNumber=10;
-if(maxNumber>1000)maxNumber=1000;
+if(maxNumber>100)maxNumber=100;
 let speechSpeed=parseFloat(localStorage.getItem(SPEED_KEY)||"0.9");
 let learningVolume=parseInt(localStorage.getItem(LEARNING_VOLUME_KEY)||"100",10);
 if(!Number.isFinite(learningVolume)||learningVolume<0)learningVolume=100;
 if(learningVolume>100)learningVolume=100;
 let volumeLevel=learningVolume;
 if(!Number.isFinite(speechSpeed))speechSpeed=0.9;
-let features=Object.assign({harakat:true,madd:true,words:true,quiz:true,harakatTab:true,gamesTab:true,hkColors:true,hkLabels:true,hkBig:false,hkRow:false},JSON.parse(localStorage.getItem(FEATURE_KEY)||"{}"));
+let features=Object.assign({quiz:true,gamesTab:true},JSON.parse(localStorage.getItem(FEATURE_KEY)||"{}"));
 let selectedNumber=1,selectedLetter=0,selectedColor=0,quizAnswer="",quizActive=false;
 let heard="",pokes=0,pokeT=0,idleAt=Date.now(),talkDog=0;
 pushNativePrefs();
-const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,SAY_SOLO:LS_SOLO=window.CatSpeech.SAY_SOLO||{},harakat:mkHarakat,madds:mkMadds,sylKind,showSyl}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
+const {letters,colors,lessonWords,numberWord,ones,tens,words:LETTER_WORDS,SAY:LS_SAY,SAY_SOLO:LS_SOLO=window.CatSpeech.SAY_SOLO||{},SAY_SPEED:LS_SPD=window.CatSpeech.SAY_SPEED||{},sylKind,showSyl}=window.CatSpeech; // المصدر الوحيد للنصوص: speech-data.js
 const $=id=>document.getElementById(id);
 function showSpeech(t){const s2=$("speech2");if(s2)s2.textContent=t}
 const catEls=()=>[$("cat2")];
@@ -66,6 +66,7 @@ function learnArgs(text){
  if(k==="madd")return[t,spd(.84)];
  return[t,spd(.91)];
 }
+function speakLetter(i){const a=learnArgs(letters[i][1]);return talk(a[0],a[1])}  // الحرف وحده (مقطع الاسم المقتطع)؛ «الحرف، الكلمة» لوضع الدروس فقط
 function speakLearning(text){const a=learnArgs(text);return talk(a[0],a[1])}
 function prefetchAll(){
  if(!window.TomNative||!TomNative.prefetch)return;
@@ -73,31 +74,19 @@ function prefetchAll(){
  const order=letters.map((_,i)=>i);order.sort((a,b)=>(a===selectedLetter?-1:b===selectedLetter?1:a-b));
  order.forEach(i=>{const l=letters[i][0];
   const la=learnArgs(letters[i][1]);add(la[0],la[1]);
-  mkHarakat(l).concat(mkMadds(l)).forEach(x=>{const a=learnArgs(x[0]);add(a[0],a[1])});
-  LETTER_WORDS[i].forEach(x=>{const a=learnArgs(x);add(a[0],a[1])});
  });
  colors.forEach(c=>add(c[0],speechSpeed));
- try{for(let n=1;n<=Math.min(maxNumber,1000);n++)add(numberWord(n),speechSpeed)}catch(e){}
+ try{for(let n=1;n<=Math.min(maxNumber,100);n++)add(numberWord(n),speechSpeed)}catch(e){}
  ["مَرْحَبًا أَنَا القِطُّ المُتَكَلِّم"].forEach(x=>add(x,speechSpeed));
  lessonWords.forEach((_,i)=>{["word","both"].forEach(k=>{const a=lsArgs(i,k);add(a[0],a[1])})});
  
- try{for(let n=1;n<=1000;n++)add(numberWord(n),speechSpeed)}catch(e){}
+ try{for(let n=1;n<=100;n++)add(numberWord(n),speechSpeed)}catch(e){}
  try{TomNative.prefetch(JSON.stringify(items))}catch(e){}
 }
 let prefetchT=null;function schedulePrefetch(){clearTimeout(prefetchT);prefetchT=setTimeout(prefetchAll,1800)}
-function addMini(parent,text,extra,label){const b=document.createElement("button");b.type="button";b.className="mini-item"+(extra?" "+extra:"");const t=document.createElement("span");t.className="mi-t";t.textContent=showSyl(text);b.appendChild(t);if(label){b.setAttribute("aria-label",label+" "+showSyl(text));const lb=document.createElement("span");lb.className="mi-l";lb.textContent=label;b.appendChild(lb)}b.onclick=()=>{b.classList.remove("speaking");void b.offsetWidth;b.classList.add("speaking");clearTimeout(b._sp);b._sp=setTimeout(()=>b.classList.remove("speaking"),1400);speakLearning(text)};parent.appendChild(b);return b}
-function renderHkLetters(){const g=$("hk-letter-grid");if(!g)return;g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.type="button";b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;g.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");document.querySelectorAll("#letter-grid .letter").forEach((y,k)=>y.classList.toggle("selected",k===i));$("letter-detail").textContent=x[0]+" — "+x[1];$("hk-detail").textContent=x[0]+" — "+x[1];renderLetterLessons();speakLearning(x[1])};g.appendChild(b)});$("hk-detail").textContent=letters[selectedLetter][0]+" — "+letters[selectedLetter][1]}
-function renderLetterLessons(){
- const l=currentLetter(),i=selectedLetter,h=$("harakat-grid"),m=$("madd-grid"),w=$("word-grid");h.innerHTML="";m.innerHTML="";w.innerHTML="";
- const hk=mkHarakat(l),md=mkMadds(l);
- hk.forEach((x,k)=>addMini(h,x[0],"hk-"+["fatha","kasra","damma","sukun"][k],x[1]));md.forEach((x,k)=>addMini(m,x[0],"md-"+["alif","waw","ya"][k],x[1]));
- LETTER_WORDS[i].forEach(x=>{const b=addMini(w,x);b.classList.add("word-item")});
-
- $("harakat-grid").parentElement.hidden=!features.harakat;$("madd-grid").parentElement.hidden=!features.madd;$("word-grid").parentElement.hidden=!features.words;
-}
-function renderLetters(){const g=$("letter-grid");g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;document.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");$("letter-detail").textContent=x[0]+" — "+x[1];selectedLetter=i;renderHkLetters();renderLetterLessons();speakLearning(x[1]);};g.appendChild(b)});$("letter-detail").textContent=letters[0][0]+" — "+letters[0][1];renderLetterLessons()}
-function renderColors(){const g=$("color-grid");g.innerHTML="";colors.forEach((x,i)=>{const b=document.createElement("button");b.className="color-card"+(i===selectedColor?" selected":"");b.innerHTML='<div class="swatch" style="background:'+x[1]+'"></div>'+x[0];b.onclick=()=>{selectedColor=i;document.querySelectorAll(".color-card").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");talk(x[0]);};g.appendChild(b)})}
-function speakCurrent(){const t=document.querySelector(".tab.active"),p=t?t.dataset.page:"numbers";if(p==="numbers")talk(numberWord(selectedNumber));else if(p==="letters")speakLearning(letters[selectedLetter][1]);else talk(colors[selectedColor][0])}
+function renderLetters(){const g=$("letter-grid");g.innerHTML="";letters.forEach((x,i)=>{const b=document.createElement("button");b.className="letter"+(i===selectedLetter?" selected":"");b.textContent=x[0];b.onclick=()=>{selectedLetter=i;document.querySelectorAll(".letter").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");$("letter-detail").textContent=x[0]+" — "+x[1];selectedLetter=i;speakLetter(i);};g.appendChild(b)});$("letter-detail").textContent=letters[0][0]+" — "+letters[0][1]}
+function renderColors(){const g=$("color-grid");g.innerHTML="";colors.forEach((x,i)=>{const b=document.createElement("button");b.className="color-card"+(i===selectedColor?" selected":"");b.innerHTML='<div class="swatch" style="background:'+x[1]+'"></div>'+x[0];b.onclick=()=>{selectedColor=i;document.querySelectorAll(".color-card").forEach(y=>y.classList.remove("selected"));b.classList.add("selected");talk(x[0],LS_SPD[x[0]]);};g.appendChild(b)})}
+function speakCurrent(){const t=document.querySelector(".tab.active"),p=t?t.dataset.page:"numbers";if(p==="numbers")talk(numberWord(selectedNumber));else if(p==="letters")speakLetter(selectedLetter);else talk(colors[selectedColor][0],LS_SPD[colors[selectedColor][0]])}
 // ===== الوضع الثالث: وضع الدروس (حرف + صورة + كلمة) =====
 const LS_KEY="lessonSeen";
 // رسمان للكلمتين اللتين لا يوجد لهما رمز تعبيري (تمر، رمان)
@@ -137,35 +126,32 @@ function lsOpen(i,say){
  if(say)lsSay("both");
 }
 (function lsInit(){
- $("lessons-mode").onclick=()=>setMode("lessons");$("harakat-mode").onclick=()=>setMode("harakat");
+ $("lessons-mode").onclick=()=>setMode("lessons");
  $("ls-prev").onclick=()=>lsOpen(lsIdx-1,true);
  $("ls-next").onclick=()=>lsOpen(lsIdx+1,true);
  $("ls-letter").onclick=()=>lsSay("name");
  $("ls-pic").onclick=()=>lsSay("word");
  $("ls-word").onclick=()=>lsSay("word");
- $("ls-play").onclick=()=>lsSay("both");
+ $("ls-play").onclick=()=>lsSay("word");
  lsOpen(0,false);
 })();
 
-/* إظهار/إخفاء تبويب «الحركات» حسب الإعداد؛ وإن كان مفتوحًا حين يُخفى نعود إلى «التعلم» */
-function applyHkLook(){const c=document.body.classList,f=features;c.toggle("hk-nocolor",f.hkColors===false);c.toggle("hk-nolabel",f.hkLabels===false);c.toggle("hk-big",f.hkBig===true);c.toggle("hk-row",f.hkRow===true)}
 function applyGamesTab(){const on=features.gamesTab!==false,b=$("cg-mode");if(!b)return;b.hidden=!on;const s=$("cg-games");if(!on&&s&&s.classList.contains("active"))$("learning-mode").click()}
 window.applyGamesTab=applyGamesTab;
-function applyHarakatTab(){const on=features.harakatTab!==false;$("harakat-mode").hidden=!on;if(!on&&$("harakat").classList.contains("active"))setMode("learning",true)}
 function setMode(mode,silent){const study=mode==="learning",letterMode=mode==="lessons";
- ["learning","lessons","harakat"].forEach(m=>{$(m).classList.toggle("active",m===mode);$(m+"-mode").classList.toggle("active",m===mode)});
- $("subtitle").textContent=letterMode?"نتعلّم الحروف مع الصور":mode==="harakat"?"الحركات والمدود والكلمات":"اضغط على القط ليكرر الدرس";
+ ["learning","lessons"].forEach(m=>{$(m).classList.toggle("active",m===mode);$(m+"-mode").classList.toggle("active",m===mode)});
+ $("subtitle").textContent=letterMode?"نتعلّم الحروف مع الصور":"اضغط على القط ليكرر الدرس";
  pushNativePrefs();
  if(silent)return;
  }
-function openSettings(){$("settings").hidden=false;switchSettings("advanced");$("max-number").value=maxNumber;$("system-voice").checked=localStorage.getItem("systemVoice")==="1";$("voice-id").value=localStorage.getItem("voiceSel")||"9";$("tts-quality").value=localStorage.getItem(STEPS_KEY)||"8";$("speech-speed-value").textContent=Number(speechSpeed).toFixed(2);$("speech-speed").value=speechSpeed;$("speed-mode").value=localStorage.getItem("speedMode")||"0";$("learning-volume-level").value=learningVolume;$("learning-volume-value").textContent=learningVolume+"%";$("enable-harakat").checked=features.harakat;$("enable-madd").checked=features.madd;$("enable-words").checked=features.words;$("enable-hk-colors").checked=features.hkColors!==false;$("enable-hk-labels").checked=features.hkLabels!==false;$("enable-hk-big").checked=features.hkBig===true;$("enable-hk-row").checked=features.hkRow===true;$("enable-harakat-tab").checked=features.harakatTab!==false;$("enable-games-tab").checked=features.gamesTab!==false}
+function openSettings(){$("settings").hidden=false;switchSettings("advanced");$("max-number").value=maxNumber;$("system-voice").checked=localStorage.getItem("systemVoice")==="1";$("voice-id").value=localStorage.getItem("voiceSel")||"9";$("tts-quality").value=localStorage.getItem(STEPS_KEY)||"8";$("speech-speed-value").textContent=Number(speechSpeed).toFixed(2);$("speech-speed").value=speechSpeed;$("speed-mode").value=localStorage.getItem("speedMode")||"0";$("learning-volume-level").value=learningVolume;$("learning-volume-value").textContent=learningVolume+"%";$("enable-games-tab").checked=features.gamesTab!==false}
 function bind(){
  $("learning-mode").onclick=()=>setMode("learning");$("mini-cat-btn").onclick=speakCurrent;
  document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));t.classList.add("active");$(t.dataset.page).classList.add("active")});
- $("speak-number").onclick=()=>talk(numberWord(selectedNumber));$("speak-letter").onclick=()=>speakLearning(letters[selectedLetter][1]);$("speak-color").onclick=()=>talk(colors[selectedColor][0]);
+ $("speak-number").onclick=()=>talk(numberWord(selectedNumber));$("speak-letter").onclick=()=>speakLetter(selectedLetter);$("speak-color").onclick=()=>talk(colors[selectedColor][0],LS_SPD[colors[selectedColor][0]]);
  $("gear").onclick=()=>askAdult(openSettings);$("gate-ok").onclick=gateSubmit;$("gate-cancel").onclick=gateClose;$("gate-in").onkeydown=e=>{if(e.key==="Enter")gateSubmit()};$("pin-save").onclick=pinSave;$("parent-pin").onfocus=function(){if(!this.value)this.type="text"};$("pin-clear").onclick=pinClear;$("close-settings").onclick=()=>$("settings").hidden=true;
  $("settings-normal").onclick=()=>switchSettings("normal");$("settings-advanced").onclick=()=>switchSettings("advanced");$("settings-lock").onclick=()=>switchSettings("lock");  $("learning-volume-level").oninput=()=>{learningVolume=Number($("learning-volume-level").value);$("learning-volume-value").textContent=learningVolume+"%";localStorage.setItem(LEARNING_VOLUME_KEY,String(learningVolume));pushNativePrefs();};
- $("save-settings").onclick=()=>{let v=parseInt(toLatin($("max-number").value),10);if(!Number.isFinite(v))v=maxNumber;v=Math.max(1,Math.min(1000,v));maxNumber=v;localStorage.setItem("systemVoice",$("system-voice").checked?"1":"0");localStorage.setItem("voiceSel",String(Math.max(0,Math.min(9,parseInt($("voice-id").value,10)||0))));localStorage.setItem(STEPS_KEY,String(parseInt($("tts-quality").value,10)||8));speechSpeed=Math.max(.6,Math.min(1.2,parseFloat($("speech-speed").value)||.9));features={harakat:$("enable-harakat").checked,madd:$("enable-madd").checked,words:$("enable-words").checked,harakatTab:$("enable-harakat-tab").checked,gamesTab:$("enable-games-tab").checked,hkColors:$("enable-hk-colors").checked,hkLabels:$("enable-hk-labels").checked,hkBig:$("enable-hk-big").checked,hkRow:$("enable-hk-row").checked};localStorage.setItem(KEY,v);localStorage.setItem(SPEED_KEY,speechSpeed);if($("speed-mode"))localStorage.setItem("speedMode",$("speed-mode").value);localStorage.setItem(LEARNING_VOLUME_KEY,String(learningVolume));pushNativePrefs();schedulePrefetch();localStorage.setItem(FEATURE_KEY,JSON.stringify(features));applyHarakatTab();applyGamesTab();applyHkLook();renderNumbers();renderLetterLessons();$("settings").hidden=true;talk("تَمَّ حِفْظُ الإِعْدَادَات",.78)};
+ $("save-settings").onclick=()=>{let v=parseInt(toLatin($("max-number").value),10);if(!Number.isFinite(v))v=maxNumber;v=Math.max(1,Math.min(100,v));maxNumber=v;localStorage.setItem("systemVoice",$("system-voice").checked?"1":"0");localStorage.setItem("voiceSel",String(Math.max(0,Math.min(9,parseInt($("voice-id").value,10)||0))));localStorage.setItem(STEPS_KEY,String(parseInt($("tts-quality").value,10)||8));speechSpeed=Math.max(.6,Math.min(1.2,parseFloat($("speech-speed").value)||.9));features={quiz:features.quiz,gamesTab:$("enable-games-tab").checked};localStorage.setItem(KEY,v);localStorage.setItem(SPEED_KEY,speechSpeed);if($("speed-mode"))localStorage.setItem("speedMode",$("speed-mode").value);localStorage.setItem(LEARNING_VOLUME_KEY,String(learningVolume));pushNativePrefs();schedulePrefetch();localStorage.setItem(FEATURE_KEY,JSON.stringify(features));applyGamesTab();renderNumbers();$("settings").hidden=true;talk("تَمَّ حِفْظُ الإِعْدَادَات",.78)};
 }
 // ---- قفل الكبار: سؤال حسابي عشوائي، أو رمز سري يختاره الكبير. 3 أخطاء = قفل دقيقة ----
 const PIN_KEY="parentPin",PAT_KEY="parentPattern";let gateOkFn=null,gateAns=0,gateBad=0,gateLockUntil=0;
@@ -241,18 +227,18 @@ function applyLive(){
  const f=()=>{applyLive();if(id==="speech-speed"||id==="speed-mode"||id==="voice-id"||id==="tts-quality")schedulePrefetch()};
  e.addEventListener("input",f);e.addEventListener("change",f)});
 // ---- زر «↺ افتراضي» تحت كل إعداد، وزر لإعادة الكل ----
-const SET_DEF={"speech-speed":"0.9","speed-mode":"0","voice-id":"9","tts-quality":"8","system-voice":false,"learning-volume-level":"100","max-number":"10","enable-harakat-tab":true,"enable-games-tab":true,"enable-harakat":true,"enable-madd":true,"enable-words":true,"enable-hk-colors":true,"enable-hk-labels":true,"enable-hk-big":false,"enable-hk-row":false};
+const SET_DEF={"speech-speed":"0.9","speed-mode":"0","voice-id":"9","tts-quality":"8","system-voice":false,"learning-volume-level":"100","max-number":"10","enable-games-tab":true};
 function resetOne(id){const e=$(id);if(!e)return;if(e.type==="checkbox")e.checked=!!SET_DEF[id];else e.value=SET_DEF[id];e.dispatchEvent(new Event("input",{bubbles:true}));e.dispatchEvent(new Event("change",{bubbles:true}))}
 (function(){const mn=$("max-number"),chips=[].slice.call(document.querySelectorAll("#mn-chips button"));
  let last=10;
- const clamp=v=>Math.max(1,Math.min(1000,v));
+ const clamp=v=>Math.max(1,Math.min(100,v));
  const parse=()=>{const v=parseInt(toLatin(mn.value),10);return Number.isFinite(v)?v:NaN};
  const sync=()=>{const v=parse();chips.forEach(b=>b.classList.toggle("on",+b.dataset.n===v))};
  const set=v=>{last=clamp(v);mn.value=last;sync()};
  const cur=()=>{const v=parse();return Number.isFinite(v)?clamp(v):last};
  $("mn-minus").onclick=()=>set(cur()-1);$("mn-plus").onclick=()=>set(cur()+1);
  chips.forEach(b=>b.onclick=()=>set(+b.dataset.n));
- /* كتابة مباشرة بالكيبورد: يمكن مسح الخانة بالكامل وكتابة رقم جديد؛ يُقبل الأرقام العربية، ويُضبط النطاق 1–1000 عند الخروج من الخانة */
+ /* كتابة مباشرة بالكيبورد: يمكن مسح الخانة بالكامل وكتابة رقم جديد؛ يُقبل الأرقام العربية، ويُضبط النطاق 1–100 عند الخروج من الخانة */
  mn.addEventListener("focus",()=>{setTimeout(()=>{try{mn.select()}catch(e){}},30)});
  mn.addEventListener("input",()=>{const t=toLatin(mn.value).replace(/\D/g,"").slice(0,4);if(t!==mn.value)mn.value=t;const v=parse();if(Number.isFinite(v)&&v>=1)last=clamp(v);sync()});
  mn.addEventListener("blur",()=>{const v=parse();set(Number.isFinite(v)&&v>=1?v:last)});
@@ -264,7 +250,7 @@ $("import-sounds").onclick=()=>{try{TomNative.importSounds()}catch(e){}};
 window.onSoundsImported=function(){schedulePrefetch()};
 /* ---- كل خيار في بطاقة مستقلة، وتحته الافتراضي وزر استعادته ---- */
 (function(){
- const DEF_LABEL={"speech-speed":"0.90","speed-mode":"تلقائي (ذكي)","voice-id":"⚡ صوت 10 (الأوضح)","tts-quality":"الأعلى وضوحًا","system-voice":"مُعطَّل","learning-volume-level":"100%","max-number":"10","enable-harakat-tab":"مفعَّل","enable-games-tab":"مفعَّل","enable-harakat":"مفعَّل","enable-madd":"مفعَّل","enable-words":"مفعَّل","enable-hk-colors":"مفعَّل","enable-hk-labels":"مفعَّل","enable-hk-big":"مُعطَّل","enable-hk-row":"مُعطَّل"};
+ const DEF_LABEL={"speech-speed":"0.90","speed-mode":"تلقائي (ذكي)","voice-id":"⚡ صوت 10 (الأوضح)","tts-quality":"الأعلى وضوحًا","system-voice":"مُعطَّل","learning-volume-level":"100%","max-number":"10","enable-games-tab":"مفعَّل"};
  const list=[];
  Object.keys(SET_DEF).forEach(id=>{
   const e=$(id),box=e&&e.closest(".opt");if(!box)return;
@@ -286,23 +272,6 @@ window.onSoundsImported=function(){schedulePrefetch()};
  new MutationObserver(()=>setTimeout(refresh,0)).observe($("settings"),{attributes:true,attributeFilter:["hidden"]});
  refresh();
 })();
-/* حالة قسم الحركات: إخفاء القسم يعطّل ما بداخله، والمظهر يتعطّل إن لم يبقَ شيء يعرض حركات أو مدودًا */
-(function(){
- const g=id=>document.getElementById(id);
- function syncSect(){
-  const tab=g("enable-harakat-tab");if(!tab)return;
-  const on=tab.checked,body=g("hk-sect-body"),st=g("hk-sect-state");
-  body.classList.toggle("off",!on);
-  if(on)body.removeAttribute("inert");else body.setAttribute("inert","");
-  st.textContent=on?"✅ القسم ظاهر في الشاشة الرئيسية":"🚫 القسم مخفي — العناصر والمظهر بالأسفل متوقفة";
-  st.classList.toggle("off",!on);
- }
- g("rst-sect").onclick=()=>{["enable-harakat-tab","enable-harakat","enable-madd","enable-words","enable-hk-colors","enable-hk-labels","enable-hk-big","enable-hk-row"].forEach(id=>resetOne(id));syncSect()};
- document.addEventListener("click",()=>setTimeout(syncSect,0),true);
- document.addEventListener("change",syncSect,true);
- new MutationObserver(()=>setTimeout(syncSect,0)).observe(g("settings"),{attributes:true,attributeFilter:["hidden"]});
- syncSect();
-})();
 $("test-voice").onclick=()=>{applyLive();talk("مَرْحَبًا أَنَا القِطُّ المُتَكَلِّم",speechSpeed)};
 /* خيارات السرعة: بطيء 0.70 · طبيعي = الافتراضي 0.90 (مدمج جاهز) · سريع 1.15 — الشريط يبقى للضبط الدقيق */
 (function(){const sel=$("speed-preset"),sl=$("speech-speed");if(!sel||!sl)return;
@@ -311,5 +280,5 @@ $("test-voice").onclick=()=>{applyLive();talk("مَرْحَبًا أَنَا ا�
  sl.addEventListener("input",sync);
  sync();
  document.addEventListener("click",()=>setTimeout(sync,0),true)})();
-renderNumbers();renderLetters();renderHkLetters();renderLetterLessons();renderColors();bind();bindCat($("cat2"));startIdle();applyHarakatTab();applyHkLook();setMode("learning",true);
+renderNumbers();renderLetters();renderColors();bind();bindCat($("cat2"));startIdle();setMode("learning",true);
 })();

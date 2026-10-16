@@ -22,7 +22,6 @@ S.letters.forEach((L, i) => {
   const l = L[0];
   lintList.push(["name", L[1]]);
   let a = learnArgs(L[1]); add(a[0], a[1]);
-  S.harakat(l).concat(S.madds(l)).forEach(x => { lintList.push(["syl", x[0]]); a = learnArgs(x[0]); add(a[0], a[1]); });
   S.words[i].forEach(w => { lintList.push(["word", w]); a = learnArgs(w); add(a[0], a[1]); });
   // كلمات الصور الإضافية في المطابقة
   S.pictures[i].forEach(e => { lintList.push(["word", e[0]]); a = learnArgs(e[0]); add(a[0], a[1]); });
@@ -30,9 +29,9 @@ S.letters.forEach((L, i) => {
   const w0 = S.SAY[S.lessonWords[i][0]] || S.lessonWords[i][0];
   a = learnArgs(L[1] + "، " + w0); add(a[0], a[1]);
 });
-S.colors.forEach(c => { lintList.push(["word", c[0]]); add(c[0], BASE); });
-for (let n = 1; n <= 1000; n++) { const w = S.numberWord(n); lintList.push(["num", w]); add(w, BASE, n); }
-const phrases = ["مَرْحَبًا أَنَا القِطُّ المُتَكَلِّم", "أَحْسَنْتَ", "جَيِّد", "صَحِيح", "خَطَأ", "أَعِدِ المُحَاوَلَةَ مَرَّةً أُخْرَى", "تَمَّ حِفْظُ الإِعْدَادَات", "كَمْ عَدَدُهَا", "أَيُّهُمَا أَكْثَر"];
+S.colors.forEach(c => { lintList.push(["word", c[0]]); add(c[0], (S.SAY_SPEED && S.SAY_SPEED[c[0]]) || BASE); });
+for (let n = 1; n <= 100; n++) { const w = S.numberWord(n); lintList.push(["num", w]); add(w, BASE, n); }
+const phrases = ["مَرْحَبًا أَنَا القِطُّ المُتَكَلِّم", "أَحْسَنْتَ", "جَيِّد", "صَحِيح", "خَطَأ", "أَعِدِ المُحَاوَلَةَ مَرَّةً أُخْرَى", "تَمَّ حِفْظُ الإِعْدَادَات", "كَمْ عَدَدُهَا"];
 phrases.forEach(p => { lintList.push(["phrase", p]); add(p, BASE); });
 
 const problems = lintAll(lintList);

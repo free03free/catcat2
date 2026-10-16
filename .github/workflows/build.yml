@@ -1,10 +1,79 @@
 name: Build APK
 on:
   workflow_dispatch:
+    inputs:
+      voices:
+        description: 'أرقام الأصوات المراد تضمينها في التطبيق (0 إلى 9) مفصولة بفواصل'
+        default: '9,1,3,6,7'
+      pregen_minutes:
+        description: 'أقصى دقائق لتوليد كل صوت (الحد الأعلى 330)'
+        default: '320'
+      tries:
+        description: 'أقصى محاولات لكل عنصر في التحقق من النطق (أقل = أسرع، 6 هو الافتراضي)'
+        default: '6'
+
 jobs:
-  build:
+  # كل صوت يُولَّد على جهاز مستقل وبالتوازي، وكل جهاز يوزّع العمل على كل أنوية المعالج.
+  pregen:
     runs-on: ubuntu-latest
     timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        voice: ${{ fromJSON(format('[{0}]', inputs.voices)) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore root files if missing
+        run: cp -n tools/rootfiles/* .
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Restore engine and generated sounds cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/talking-cat-engine
+          key: cat-engine-v4-${{ matrix.voice }}-${{ github.run_number }}
+          restore-keys: |
+            cat-engine-v4-${{ matrix.voice }}-
+      - name: Generate sounds for voice ${{ matrix.voice }}
+        env:
+          PREGEN_MINUTES: ${{ inputs.pregen_minutes }}
+          PREGEN_STEPS: '8'
+          PREGEN_TRIES: ${{ inputs.tries }}
+          PREGEN_VOICES: ${{ matrix.voice }}
+        run: |
+          export PREGEN_SHARDS=$(nproc)
+          echo "عدد الأنوية: $PREGEN_SHARDS"
+          bash fetch-engine.sh
+      - name: Save engine and generated sounds cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/talking-cat-engine
+          key: cat-engine-v4-${{ matrix.voice }}-${{ github.run_number }}
+      - name: Keep only this voice for upload
+        if: always()
+        run: find app/src/main/assets/tts-pre -mindepth 1 -maxdepth 1 ! -name "v${{ matrix.voice }}" -exec rm -rf {} + 2>/dev/null || true
+      - name: Upload sounds
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-v${{ matrix.voice }}
+          path: app/src/main/assets/tts-pre/
+          if-no-files-found: ignore
+      - name: Upload pronunciation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pack-report-v${{ matrix.voice }}
+          path: pack-report.txt
+          if-no-files-found: ignore
+
+  build:
+    needs: pregen
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - name: Restore root files if missing
@@ -13,44 +82,35 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Restore engine and voice pack cache
-        uses: actions/cache/restore@v4
+      - name: Cache engine downloads
+        uses: actions/cache@v4
         with:
           path: ~/.cache/talking-cat-engine
-          key: cat-engine-v2-${{ github.run_number }}
-          restore-keys: |
-            cat-engine-v2-
+          key: cat-engine-build-v3
+      - name: Download generated sounds
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pre-v*
+          merge-multiple: true
+          path: app/src/main/assets/tts-pre
+      - name: Show bundled sounds
+        run: |
+          ls app/src/main/assets/tts-pre 2>/dev/null || echo "لا توجد أصوات جاهزة: سيُولَّد الصوت على الجهاز"
+          for d in app/src/main/assets/tts-pre/v*/; do [ -d "$d" ] && echo "$d: $(ls "$d" | wc -l) ملفًا"; done || true
       - name: Install Android platform
         run: |
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platforms;android-37" || true
       - name: Build debug APK
         env:
-          PREGEN_MINUTES: '270'
-          PREGEN_STEPS: '8'
-          PREGEN_VOICES: '9,1,3,6,7'
+          SKIP_PREGEN: '1'
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
           ./gradlew --no-daemon -Dorg.gradle.jvmargs=-Xmx3g assembleDebug
-      - name: Save engine and voice pack cache
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: ~/.cache/talking-cat-engine
-          key: cat-engine-v2-${{ github.run_number }}
       - uses: actions/upload-artifact@v4
         with:
           name: talking-cat-apk
           path: app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload pronunciation report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: pack-report
-          path: pack-report.txt
-          if-no-files-found: ignore

@@ -504,7 +504,8 @@ final class EchoEngine {
     }
 
     private String keyOf(String text, float speed) {
-        return voiceId + "|" + steps + "|" + Math.round(speed * 100) + "|" + text;
+        // «w2|»: يُبطل ما حُفظ على الجهاز سابقًا لكلمات الصور بالطريقة القديمة (الكلمة وحدها)
+        return voiceId + "|" + steps + "|" + Math.round(speed * 100) + "|" + (SyllableCutter.wordName(text) != null ? "w2|" : "") + text;
     }
 
     /** مضمَّن في التطبيق ← ذاكرة ← قرص ← توليد (Supertonic، lang=ar). النتيجة مقصوصة الصمت. */
@@ -527,11 +528,42 @@ final class EchoEngine {
             GenerationConfig g = new GenerationConfig();
             g.setSid(voiceId); g.setSpeed(speed); g.setNumSteps(steps);
             HashMap<String, String> ex = new HashMap<>(); ex.put("lang", "ar"); g.setExtra(ex);
-            if (SyllableCutter.isSyllable(text)) {
+            if (SyllableCutter.nameWord(text) != null) {
+                // اسم حرف: نولّد «الاسم ، ، ، كلمته» ونقتطع الاسم فقط
+                GeneratedAudio ca = null;
+                for (String ph : SyllableCutter.namePhrases(text)) {
+                    GeneratedAudio c1 = t.generateWithConfig(ph, g);
+                    float[] raw = c1 == null ? null : c1.getSamples();
+                    if (raw != null && raw.length > 0) {
+                        float[] cut = SyllableCutter.cutName(raw, c1.getSampleRate());
+                        if (cut != null) { ca = c1; syllable = cut; break; }
+                    }
+                }
+                a = syllable != null ? ca : t.generateWithConfig(text, g);
+            } else if (SyllableCutter.wordName(text) != null) {
+                // كلمة صورة الدرس: ينطقها النموذج وحدها بحركات خاطئة أحيانًا (حَصان، ذُرا)، فنولّد «الحرف، الكلمة» ونقتطع الكلمة
+                GeneratedAudio ca = null;
+                String[] phs = SyllableCutter.wordPhrases(text);
+                for (int q = 0; q < phs.length && syllable == null; q++) {
+                    GeneratedAudio c1 = t.generateWithConfig(phs[q], g);
+                    float[] raw = c1 == null ? null : c1.getSamples();
+                    if (raw != null && raw.length > 0) {
+                        float[] cut = SyllableCutter.cutWord(raw, c1.getSampleRate(), q == 0 ? 100 : 150);
+                        if (cut != null) { ca = c1; syllable = cut; }
+                    }
+                }
+                a = syllable != null ? ca : t.generateWithConfig(text, g);   // فشل الاقتطاع: نولّدها وحدها
+            } else if (SyllableCutter.isSyllable(text)) {
                 // النموذج ينطق المقطع المنفرد بشكل رديء؛ نولّد «حرف بَ، كرر: بَ» ونأخذ آخر مقطع فقط
-                GeneratedAudio ca = t.generateWithConfig(SyllableCutter.carrier(text), g);
-                float[] raw = ca == null ? null : ca.getSamples();
-                if (raw != null && raw.length > 0) syllable = SyllableCutter.cutLast(raw, ca.getSampleRate(), SyllableCutter.maxDur(text));
+                GeneratedAudio ca = null;
+                for (String cr : SyllableCutter.carriers(text)) {
+                    GeneratedAudio c1 = t.generateWithConfig(cr, g);
+                    float[] raw = c1 == null ? null : c1.getSamples();
+                    if (raw != null && raw.length > 0) {
+                        float[] cut = SyllableCutter.cutLast(raw, c1.getSampleRate(), SyllableCutter.maxDur(text));
+                        if (cut != null) { ca = c1; syllable = cut; break; }
+                    }
+                }
                 a = syllable != null ? ca : t.generateWithConfig(text, g);   // فشل الاقتطاع: نولّد المقطع وحده
             } else {
                 a = t.generateWithConfig(text, g);

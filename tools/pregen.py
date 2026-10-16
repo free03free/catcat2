@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-يولّد مسبقًا أصوات كل الحروف والحركات والمدود والكلمات والألوان والأرقام (1..1000) من tools/lessons.json
+يولّد مسبقًا أصوات كل الحروف والكلمات والألوان والأرقام (1..100) من tools/lessons.json
 لكل الأصوات العشرة (0..9) بجودة عالية، ويضغطها بصيغة m4a (AAC) ويضعها في app/src/main/assets/tts-pre/v<رقم>/
 فتدخل داخل الـ APK وتُنطق فورًا من أول ضغطة بأي صوت يختاره المستخدم، بلا تجهيز على الجهاز.
 يعمل تلقائيًا أثناء البناء من fetch-engine.sh، ويُستأنف إن انقطع (يتخطى ما تم توليده).
@@ -9,7 +9,7 @@
 العناصر التي لم تجتز التحقق تُسجَّل في pack-report.txt لمراجعتها.
 الاستعمال اليدوي:  python3 tools/pregen.py --steps 8 --voices 0,9 --jobs 2
 """
-import argparse, difflib, json, os, re, shutil, subprocess, sys, time, unicodedata
+import argparse, difflib, glob, json, os, re, shutil, subprocess, sys, time, unicodedata
 import numpy as np
 from multiprocessing import get_context
 
@@ -24,9 +24,10 @@ ap.add_argument("--out", default=os.path.join(root, "app/src/main/assets/tts-pre
 ap.add_argument("--voices", default="0,1,2,3,4,5,6,7,8,9")
 ap.add_argument("--steps", type=int, default=8)
 ap.add_argument("--jobs", type=int, default=os.cpu_count() or 2)
+ap.add_argument("--shards", type=int, default=1, help="تقسيم عناصر كل صوت على هذا العدد من العمليات المتوازية (يُنصح بعدد أنوية المعالج)")
 ap.add_argument("--bitrate", default="48k")
 ap.add_argument("--budget-min", type=float, default=0, help="أقصى مدة بالدقائق في هذه الدورة (0 = بلا حد)")
-ap.add_argument("--max-num", type=int, default=0, help="الاكتفاء بالأرقام حتى هذا الحد (0 = كلها حتى 1000)")
+ap.add_argument("--max-num", type=int, default=0, help="الاكتفاء بالأرقام حتى هذا الحد (0 = كلها حتى 100)")
 ap.add_argument("--start", type=int, default=0, help="للتجربة فقط")
 ap.add_argument("--limit", type=int, default=0, help="للتجربة فقط")
 ap.add_argument("--asr-dir", default=os.path.join(os.environ.get("CAT_CACHE") or os.path.expanduser("~/.cache/talking-cat-engine"), "whisper-small"))
@@ -84,13 +85,72 @@ def syl_kind(c):
     return ""
 def syl_letter(c):  # الحرف الذي يجب أن يسمعه التحقق: في «أَبْ» هو الباء لا الهمزة
     return c[2] if RE_SUKUN.match(c) else ("\u0627" if c == "\u0622" else c[0])
+_ORDER = "أبتثجحخدذرزسشصضطظعغفقكلمنهوي"
+_NAMES = ["أَلِف","بَاء","تَاء","ثَاء","جِيم","حَاء","خَاء","دَال","ذَال","رَاء","زَاي","سِين","شِين","صَاد","ضَاد","طَاء","ظَاء","عَيْن","غَيْن","فَاء","قَاف","كَاف","لَام","مِيم","نُون","هَاء","وَاو","يَاء"]
 def carriers(c):
-    """صيغ الجملة الحاملة (بلا أي كلمة تتسرب إلى الصوت). الأولى هي نفسها في EchoEngine/SyllableCutter؛
-    والبقية تُجرَّب عند تكرار المحاولة لأن إيقاعًا مختلفًا يغيّر نطق المقطع المنفرد."""
-    return [f"{c} ، ، {c} ، ، {c}", f"{c} . {c} . {c}", f"{c} ، {c} ، {c}", f"{c} {c} {c}", f"{c} ، ، ، {c} ، ، ، {c}"]
+    L = c[2] if RE_SUKUN.match(c) else c[0]
+    i = _ORDER.find("أ" if L in "آإ" else L)
+    base = f"{c} ، ، {c} ، ، {c}"
+    if i < 0: return [base, f"{c} . {c} . {c}", f"{c} ، {c} ، {c}"]
+    return [base, f"{_NAMES[i]} ، ، {c} ، ، {c} ، ، {c}", f"{c} . {c} . {c}", f"{c} ، {c} ، {c}"]
 def carrier(c): return carriers(c)[0]
 
-def max_syl_dur(c): return 0.85 if syl_kind(c) == "madd" else 0.5   # أطول مدة معقولة لمقطع واحد
+# اسم الحرف وحده (تَاء) ينطقه النموذج ناقصًا؛ فنولّد «الاسم ، ، ، كلمته» (مقاطع وضع الدروس) ونقتطع الاسم فقط.
+NAME_WORD = {"أَلِف": "أَسَد", "بَاء": "بَقَرَة", "تَاء": "تَمْرْ", "ثَاء": "ثَعْلَب", "جِيم": "جَمَل", "حَاء": "حِصَان", "خَاء": "خَرُوف", "دَال": "دُبْ", "ذَال": "ذُرَة", "رَاء": "رُمَّان", "زَاي": "زَرَافَة", "سِين": "سَمَكَة", "شِين": "شَمْس", "صَاد": "صَارُوخ", "ضَاد": "ضِفْدَع", "طَاء": "طَائِر", "ظَاء": "ظَرْف", "عَيْن": "عِنَب", "غَيْن": "غَيْمَه", "فَاء": "فِيل", "قَاف": "قِطَّة", "كَاف": "كَلْب", "لَام": "لَيْمُون", "مِيم": "مَوْز", "نُون": "نَحْلَه", "هَاء": "هِلَال", "وَاو": "وَرْدَة", "يَاء": "يَد"}
+NAME_WORD.update({"تَا": "تَمْرْ", "فَا": "فِيل"})  # صيغة المد المنطوقة لاسمي ت وف (انظر SAY في speech-data.js)
+# كلمة الصورة وحدها (بَقَرَة) ينطقها النموذج أحيانًا خطأ منفردة، وتخرج سليمة بعد اسم حرفها («بَاء ، ، ، بَقَرَة»).
+# فنولّد العبارة ونقتطع الكلمة (ما بعد أطول وقفة) ونتحقق منها بـ Whisper، وإن لم تجتز نرجع إلى توليدها وحدها.
+WORD_NAME = {w: n for n, w in NAME_WORD.items()}   # التاء والفاء: الصيغة الأخيرة (تَا، فَا) هي الأصل لأنها المنطوقة فعلًا
+def word_phrases(c):
+    n = WORD_NAME[c]
+    # الأولى بصيغة «الحرف، الكلمة» نفسها التي يسمعها الطفل سليمة في التطبيق (حصان بكسرة الحاء، عنب بكسرة العين، رمان بضمة الراء، ذرة بالتاء المربوطة)
+    return [f"{n}، {c}", f"{n} ، ، ، {c}", f"{n} ، ، {c}"]
+def cut_word(s, sr, gap_ms=90, min_pause_ms=150):
+    """الكلمة بعد اسم الحرف: ما بعد أطول وقفة بين المقطعين إلى آخر صوت. (مقطع صالح، نجح الاقتطاع). يطابق cutWord في SyllableCutter.java."""
+    fr = int(sr * 0.01); n = len(s) // fr
+    if n < 5: return s, False
+    e = np.sqrt((s[:n * fr].reshape(n, fr) ** 2).mean(axis=1))
+    act = e > max(float(e.max()) * 0.03, 1e-4)
+    idx = np.where(act)[0]
+    if len(idx) == 0: return s, False
+    first, last = int(idx[0]), int(idx[-1])
+    best_gap = 0; word_start = -1; prev = first
+    for k in idx[1:]:
+        k = int(k); g = (k - prev - 1) * 10
+        if g >= gap_ms and g > best_gap: best_gap = g; word_start = k
+        prev = k
+    if word_start < 0 or best_gap < min_pause_ms: return s, False
+    dur = (last + 1 - word_start) * 0.01
+    if dur < 0.2 or dur > 1.8: return s, False
+    a = max(0, word_start * fr - int(sr * 0.04)); b = min(len(s), (last + 1) * fr + int(sr * 0.12))
+    seg = s[a:b].copy(); f = int(sr * 0.006)
+    if len(seg) > 2 * f: seg[:f] *= np.linspace(0, 1, f).astype(np.float32); seg[-f:] *= np.linspace(1, 0, f).astype(np.float32)
+    return seg, True
+def name_phrases(c):
+    w = NAME_WORD[c]
+    return [f"{c} ، ، ، {w}", f"{c} ، ، ، ، {w}", f"{c} ، ، {w}"]
+def cut_name(s, sr, gap_ms=90):
+    """أول مقطع منطوق (الاسم) قبل الوقفة. يطابق cutName في SyllableCutter.java."""
+    fr = int(sr * 0.01); n = len(s) // fr
+    if n < 5: return s, False
+    e = np.sqrt((s[:n * fr].reshape(n, fr) ** 2).mean(axis=1))
+    act = e > max(float(e.max()) * 0.03, 1e-4)
+    idx = np.where(act)[0]
+    if len(idx) == 0: return s, False
+    start = int(idx[0]); end = start; gap = 0; k = start
+    while k < n:
+        if act[k]: end = k; gap = 0
+        else:
+            gap += 1
+            if gap * 10 >= gap_ms: break
+        k += 1
+    more = bool(act[end + 1:].any())
+    a = max(0, start * fr - int(sr * 0.04)); b = min(len(s), (end + 1) * fr + int(sr * 0.10))
+    seg = s[a:b].copy(); f = int(sr * 0.006)
+    if len(seg) > 2 * f: seg[:f] *= np.linspace(0, 1, f).astype(np.float32); seg[-f:] *= np.linspace(1, 0, f).astype(np.float32)
+    return seg, (more and 0.25 <= (end + 1 - start) * 0.01 <= 0.8)
+
+def max_syl_dur(c): return 0.70 if syl_kind(c) == "madd" else 0.5   # أطول مدة معقولة لمقطع واحد
 
 def cut_last(s, sr, max_dur=0.9, gap_ms=90):
     """يقتطع آخر مقطع. إن التصق مقطعان (عاعا) نقسمهما عند أعمق انخفاض في الطاقة ونأخذ الأخير. تطابق SyllableCutter.cutLast."""
@@ -113,7 +173,9 @@ def cut_last(s, sr, max_dur=0.9, gap_ms=90):
             if e[i] <= e[i - 1] and e[i] <= e[i + 1] and (end - i) * 0.01 >= 0.12:
                 left = float(e[start:i].max()); right = float(e[i:end + 1].max())
                 if e[i] < 0.5 * min(left, right): best = i
-        if best < 0: break
+        if best < 0:
+            best = start + (end + 1 - start) // 2 - 1   # عاعا ملتصقة: نأخذ النصف الأخير
+            if (end - best) * 0.01 < 0.12: break
         start = best + 1
         while start < end and not act[start]: start += 1
     a = max(0, start * fr - int(sr * 0.04)); b = min(len(s), (end + 1) * fr + int(sr * 0.12))
@@ -152,6 +214,22 @@ def score(expected, n, got):
 items = json.load(open(os.path.join(here, "lessons.json"), encoding="utf-8"))
 if a.max_num: items = [r for r in items if len(r) < 3 or r[2] <= a.max_num]
 if a.start or a.limit: items = items[a.start:(a.start + a.limit) if a.limit else None]
+def item_key(r): return f"{int(r[1] * 100 + 0.5)}|{clean(r[0])}"
+WANT = {item_key(r) for r in items}
+WORDCUT = 2   # رقم طريقة توليد كلمة الصورة وحدها؛ إن اختلف عمّا في الفهرس القديم أُعيد توليد هذه الكلمات فقط
+WORDKEYS = {item_key(r) for r in items if (len(r) < 3 or r[2] is None) and clean(r[0]) in WORD_NAME and not syl_kind(clean(r[0]))}
+
+def load_idx(p):
+    """يقرأ ملف فهرس (رئيسي أو جزء من تقسيم) إن كان بنفس الخطوات والصيغة، وإلا يعيد فارغًا."""
+    try:
+        o = json.load(open(p, encoding="utf-8"))
+        if o.get("steps") == a.steps and o.get("format") == "m4a":
+            it = o.get("items", {})
+            if o.get("wordcut") != WORDCUT: it = {k: v for k, v in it.items() if k not in WORDKEYS}   # كلمات الصور القديمة تُعاد
+            return it, {k: v for k, v in o.get("weak", {}).items() if k in it}
+    except Exception: pass
+    return {}, {}
+
 T0 = time.time()
 DEADLINE = T0 + a.budget_min * 60 if a.budget_min else 0
 
@@ -159,7 +237,8 @@ def encode(pcm, path):
     subprocess.run([FF, "-y", "-loglevel", "error", "-f", "s16le", "-ar", "22050", "-ac", "1", "-i", "-",
                     "-c:a", "aac", "-b:a", a.bitrate, "-movflags", "+faststart", path], input=pcm, check=True)
 
-def work(voice):
+def work(task):
+    voice, shard = task
     import sherpa_onnx
     from scipy.signal import resample_poly
     d = a.model
@@ -182,43 +261,52 @@ def work(voice):
         st = rec.create_stream(); st.accept_waveform(16000, x); rec.decode_stream(st)
         return st.result.text.strip()
     od = os.path.join(a.out, f"v{voice}"); os.makedirs(od, exist_ok=True)
-    ip = os.path.join(od, "index.json")
-    index = {"rate": 22050, "format": "m4a", "steps": a.steps, "voice": voice, "items": {}, "weak": {}}
-    if os.path.exists(ip):
-        try:
-            old = json.load(open(ip, encoding="utf-8"))
-            if old.get("steps") == a.steps and old.get("format") == "m4a": index["items"] = old.get("items", {}); index["weak"] = old.get("weak", {})
-        except Exception: pass
+    # كل عملية تعالج حصتها فقط (n % shards == shard) وتكتب فهرسها الجزئي؛ ويُدمج الجميع في index.json بعد الانتهاء
+    my_items = [r for n, r in enumerate(items) if n % a.shards == shard]
+    mine = {item_key(r) for r in my_items}
+    ip = os.path.join(od, "index.json" if a.shards == 1 else f"index.s{shard}.json")
+    index = {"rate": 22050, "format": "m4a", "steps": a.steps, "voice": voice, "wordcut": WORDCUT, "items": {}, "weak": {}}
+    for p in [os.path.join(od, "index.json")] + sorted(glob.glob(os.path.join(od, "index.s*.json"))):   # ما وُلّد سابقًا (حتى لو بعدد تقسيم مختلف)
+        it, wk = load_idx(p)
+        for k, v in it.items():
+            if k in mine and os.path.exists(os.path.join(od, v)):
+                index["items"][k] = v
+                if k in wk: index["weak"][k] = wk[k]
     def save(): json.dump(index, open(ip, "w", encoding="utf-8"), ensure_ascii=False)
     made = 0; stopped = False
-    want = {f"{int(r[1] * 100 + 0.5)}|{clean(r[0])}" for r in items}
-    for k in [k for k in index["items"] if k not in want]:   # نصوص قديمة حُذفت من lessons.json
-        try: os.remove(os.path.join(od, index["items"][k]))
-        except OSError: pass
-        index["items"].pop(k, None); index["weak"].pop(k, None)
-    for n, row in enumerate(items):
+    for n, row in enumerate(my_items):
         text, sp = row[0], row[1]; num = row[2] if len(row) > 2 else None
         c = clean(text); key = f"{int(sp * 100 + 0.5)}|{c}"
         fn = hashlib.sha1(key.encode("utf-8")).hexdigest()[:12] + ".m4a"  # ثابت: لا يتلف عند تغيّر ترتيب القائمة
         if key in index["items"] and os.path.exists(os.path.join(od, index["items"][key])): continue
         if DEADLINE and time.time() > DEADLINE: stopped = True; break
         best = None
-        syl = bool(syl_kind(c))
-        for attempt in range(1, ((max(a.tries, 10) if syl else a.tries) if rec else 1) + 1):
+        syl = bool(syl_kind(c)) or c in NAME_WORD
+        wd = (num is None) and (c in WORD_NAME) and not syl
+        if wd:   # كلمة صورة: أولًا مقتطعة من «الاسم ، ، ، الكلمة» (مضمونة النطق كما مع الحرف)، ثم وحدها كاحتياط
+            ph = word_phrases(c); nodiac = re.sub("[\u064B-\u065F\u0670]", "", c)
+            cands = [("cut", ph[0]), ("cut", ph[1]), ("cut", ph[0]), ("cut", ph[1]), ("cut", ph[2]), ("dir", c), ("dir", nodiac)]
+        ntries = len(cands) if wd else ((max(a.tries, min(10, a.tries * 2)) if syl else a.tries) if rec else 1)
+        for attempt in range(1, ntries + 1):
             g = sherpa_onnx.GenerationConfig(); g.sid = voice; g.speed = float(sp); g.num_steps = a.steps; g.extra = {"lang": "ar"}
-            syl = bool(syl_kind(c))
-            vs = carriers(c) if syl else variants(c, num)
-            r = tts.generate(vs[(attempt - 1) % len(vs)], g)
+            syl = bool(syl_kind(c)); nm = c in NAME_WORD
+            vs = name_phrases(c) if nm else (carriers(c) if syl else variants(c, num))
+            kind, txt = cands[attempt - 1] if wd else ("", vs[(attempt - 1) % len(vs)])
+            r = tts.generate(txt, g)
             raw = np.asarray(r.samples, dtype=np.float32)
-            if syl: s, okdur = cut_last(raw, r.sample_rate, max_syl_dur(c))
+            if wd and kind == "cut": s, okdur = cut_word(raw, r.sample_rate, min_pause_ms=(100 if txt == word_phrases(c)[0] else 150))
+            elif nm: s, okdur = cut_name(raw, r.sample_rate)
+            elif syl: s, okdur = cut_last(raw, r.sample_rate, max_syl_dur(c))
             else: s, okdur = trim(raw, r.sample_rate), True
             if r.sample_rate != 22050: s = resample_poly(s, 22050, r.sample_rate).astype(np.float32)
-            if not rec: best = (s, 1.0, ""); break
+            if not rec:
+                if wd and not okdur: continue
+                best = (s, 1.0, ""); break
             # المقطع القصير (0.2 ث) لا يستطيع Whisper سماعه منفردًا؛ نكرره ثلاثًا بفواصل للتحقق فقط (الملف المحفوظ هو المقطع وحده)
             if syl:
                 gp = np.zeros(int(22050 * 0.35), dtype=np.float32); heard = transcribe(np.concatenate([s, gp, s, gp, s]), 22050)
             else: heard = transcribe(s, 22050)
-            sc = (0.0 if not okdur else syl_score(c, heard)) if syl else score(c, num, heard)
+            sc = (0.0 if not okdur else syl_score(c, heard)) if syl else (0.0 if (nm or wd) and not okdur else score(c, num, heard))
             if best is None or sc > best[1]: best = (s, sc, heard)
             if sc >= a.accept: break
         s = best[0]
@@ -228,9 +316,9 @@ def work(voice):
         encode((s / pk * 0.95 * 32767).astype("<i2").tobytes(), os.path.join(od, fn))
         index["items"][key] = fn; made += 1
         if made % 25 == 0:
-            save(); print(f"صوت {voice}: {len(index['items'])}/{len(items)}  ({int(time.time()-T0)}s)", flush=True)
+            save(); print(f"صوت {voice}: {len(index['items'])}/{len(my_items)}  ({int(time.time()-T0)}s)", flush=True)
     save()
-    print(f"صوت {voice}: {'توقّف مؤقتًا' if stopped else 'اكتمل'} {len(index['items'])}/{len(items)}", flush=True)
+    print(f"صوت {voice}: {'توقّف مؤقتًا' if stopped else 'اكتمل'} {len(index['items'])}/{len(my_items)}", flush=True)
     return voice, (not stopped)
 
 if __name__ == "__main__":
@@ -238,8 +326,29 @@ if __name__ == "__main__":
     os.makedirs(a.out, exist_ok=True)
     done_mark = os.path.join(a.out, ".complete")
     if os.path.exists(done_mark): os.remove(done_mark)
-    with get_context("fork").Pool(max(1, min(a.jobs, len(voices)))) as pool:
-        res = pool.map(work, voices, chunksize=1)
+    tasks = [(v, k) for v in voices for k in range(max(1, a.shards))]
+    with get_context("fork").Pool(max(1, min(a.jobs, len(tasks)))) as pool:
+        res = pool.map(work, tasks, chunksize=1)
+    # دمج الفهارس الجزئية في index.json لكل صوت، وحذف ما لم يعد مطلوبًا
+    for v in voices:
+        od = os.path.join(a.out, f"v{v}")
+        if not os.path.isdir(od): continue
+        parts = sorted(glob.glob(os.path.join(od, "index.s*.json")))
+        items_m, weak_m = {}, {}
+        for p in [os.path.join(od, "index.json")] + parts:
+            it, wk = load_idx(p); items_m.update(it); weak_m.update(wk)
+        if not (a.start or a.limit):
+            for k in [k for k in items_m if k not in WANT]: items_m.pop(k, None); weak_m.pop(k, None)
+            used = set(items_m.values())
+            for f in os.listdir(od):
+                if f.endswith(".m4a") and f not in used:
+                    try: os.remove(os.path.join(od, f))
+                    except OSError: pass
+        json.dump({"rate": 22050, "format": "m4a", "steps": a.steps, "voice": v, "wordcut": WORDCUT, "items": items_m, "weak": weak_m},
+                  open(os.path.join(od, "index.json"), "w", encoding="utf-8"), ensure_ascii=False)
+        for p in parts:
+            try: os.remove(p)
+            except OSError: pass
     size = 0
     for v in voices:
         vd = os.path.join(a.out, f"v{v}")
