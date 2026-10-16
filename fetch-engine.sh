@@ -84,6 +84,8 @@ if [ "${SKIP_PREGEN:-0}" != "1" ] && [ ! -f "$PRE/.complete" ]; then
         fi
         rm -f "$CACHE/whisper-small.tar.bz2"
       fi
+      # مزامنة قائمة النصوص مع speech-data.js (يلتقط أي تصحيح في SAY) قبل التوليد؛ تُتخطّى إن لم تتوفر node
+      if command -v node >/dev/null 2>&1; then node tools/gen_lessons.js || echo "تحذير: تعذّر تحديث lessons.json، تُستعمل النسخة الموجودة"; fi
       echo "توليد الأصوات الجاهزة (حدّ ${PREGEN_MINUTES:-25} دقيقة في هذا البناء)…"
       "$PY" tools/pregen.py --voices "${PREGEN_VOICES:-9,1,3,6,7}" --steps "${PREGEN_STEPS:-8}" --budget-min "${PREGEN_MINUTES:-25}" --shards "${PREGEN_SHARDS:-1}" --tries "${PREGEN_TRIES:-6}" --asr-dir "$W" || { echo "تعذّر توليد الأصوات الجاهزة؛ سيُولَّد الصوت وقت التشغيل."; echo "pregen failed" > "$PRE/.failed"; }
     else

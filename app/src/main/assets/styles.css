@@ -260,3 +260,22 @@ body:not(.hk-nocolor) .md-ya{background:#cdf3f1;color:#0a6b66}
 /* منع تحديد النص ونسخه في التطبيق كله (يبقى التحرير في خانات الإدخال) */
 html,body,*{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 input,textarea{-webkit-user-select:text;user-select:text}
+
+/* ===== v26: شريط تبديل واحد أنيق للأرقام والحروف والألوان + خلفيات ناعمة لكل صفحة ===== */
+.tabs{display:flex;gap:4px;margin:12px 0;padding:5px;background:#fff;border-radius:24px;box-shadow:0 4px 0 #ecd9b8,0 8px 18px #7a4b0f14}
+.tab{--c:#555;--sh:#0003;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:68px;padding:8px 2px;border:0;border-radius:19px;background:transparent;color:#594536;font-weight:800;transition:background .18s,color .18s,transform .12s}
+.tab .ti{font-size:24px;line-height:1.1;font-weight:900;display:flex;align-items:center;justify-content:center;min-height:30px;direction:rtl;color:var(--c);white-space:nowrap}
+.tab .tl{font-size:15px}
+.tab:active{transform:scale(.97)}
+.tab.active{background:var(--c);color:#fff;box-shadow:0 5px 12px var(--sh)}
+.tab.active .ti{color:#fff}
+.t-num{--c:#2f7fd6;--sh:#2f7fd655}
+.t-let{--c:#2e9a45;--sh:#2e9a4555}
+.t-col{--c:#d9457f;--sh:#d9457f55}
+.tab .rb{display:inline-flex;gap:4px}
+.tab .rb b{display:block;width:13px;height:13px;border-radius:50%;box-shadow:0 0 0 1.5px #fff}
+.tab .rb b:nth-child(1){background:#e74c3c}.tab .rb b:nth-child(2){background:#2f80ed}.tab .rb b:nth-child(3){background:#f2c200}
+#numbers{background:#eef6ff;box-shadow:0 6px 18px #2f7fd622}
+#letters{background:#eefaf0;box-shadow:0 6px 18px #2e9a4522}
+#colors{background:#fff0f6;box-shadow:0 6px 18px #d9457f22}
+#numbers h2{color:#2f7fd6}#letters h2{color:#2e9a45}#colors h2{color:#d9457f}

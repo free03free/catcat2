@@ -65,14 +65,21 @@ def norm(t):
     t = re.sub(r"[اه](?=\s|$)", "ه", t)
     return re.sub(r"\s+", " ", t).strip()
 
+# تصحيحات يدوية تُدمج عند كل بناء (tools/corrections.json): redo = حذف الصوت المخزّن وإعادة توليده، alt = صيغ نطق بديلة
+try: _CORR = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "corrections.json"), encoding="utf-8"))
+except Exception: _CORR = {}
+REDO = {clean(x) for x in _CORR.get("redo", [])}
+ALT = {clean(k): [clean(x) for x in v] for k, v in _CORR.get("alt", {}).items()}
+def key_text(k): return k.split("|", 1)[1] if "|" in k else k
+
 def variants(c, num):
     """الأرقام والكلمات المفردة (أسماء الحروف وكلمات الصور): النموذج ينطق أحيانًا أوضح بلا سكون أو بلا تشكيل،
     فنجرّب الصيغ الثلاث ونختار ما يسمعه التحقق صحيحًا. عبارات «حرف أَ، كرر» و«مد:» تبقى بتشكيلها الكامل."""
     single = (" " not in c) and (":" not in c) and ("،" not in c) and not c.startswith("حرف") and not c.startswith("مد")
-    if num is None and not single: return [c]
+    if num is None and not single: return [c] + ALT.get(c, [])
     nodiac = re.sub("[\u064B-\u065F\u0670]", "", c)
     nosukun = c.replace("\u0652", "")
-    return [c, nodiac, nosukun]
+    return [c, nodiac, nosukun] + ALT.get(c, [])
 
 # مقاطع الحرف: حركة (بَ بِ بُ)، سكون بعد فتحة (أَبْ)، مد (بَا بُو بِي، آ).  تطابق sylKind في speech-data.js وEchoEngine.java.
 # النموذج ينطق المقطع المنفرد بشكل رديء، فنولّد جملة حاملة ثم نقتطع آخر مقطع منها فقط.
@@ -242,7 +249,7 @@ def load_idx(p):
     try:
         o = json.load(open(p, encoding="utf-8"))
         if o.get("steps") == a.steps and o.get("format") == "m4a":
-            it = o.get("items", {})
+            it = {k: v for k, v in o.get("items", {}).items() if clean(key_text(k)) not in REDO}   # التصحيحات اليدوية: تُعاد دائمًا
             if o.get("wordcut") != WORDCUT: it = {k: v for k, v in it.items() if k not in WORDKEYS}   # كلمات الصور القديمة تُعاد
             return it, {k: v for k, v in o.get("weak", {}).items() if k in it}
     except Exception: pass
@@ -323,7 +330,7 @@ def work(task):
                 except Exception as ex: print("تعذّر اقتطاع", c, ex, flush=True)
         if wd:   # كلمة صورة: ثم مقتطعة من «الاسم ، ، ، الكلمة» (مضمونة النطق كما مع الحرف)، ثم وحدها كاحتياط
             ph = word_phrases(c); nodiac = re.sub("[\u064B-\u065F\u0670]", "", c)
-            cands = [("cut", ph[0]), ("cut", ph[1]), ("cut", ph[0]), ("cut", ph[1]), ("cut", ph[2])] + [("cut", x) for x in ph[3:]] + [("dir", c), ("dir", nodiac)]
+            cands = [("cut", ph[0]), ("cut", ph[1]), ("cut", ph[0]), ("cut", ph[1]), ("cut", ph[2])] + [("cut", x) for x in ph[3:]] + [("dir", c), ("dir", nodiac)] + [("dir", x) for x in ALT.get(c, [])] + [("cut", f"{WORD_NAME[c]}، {x}") for x in ALT.get(c, [])]
         ntries = (0 if best else len(cands)) if wd else ((max(a.tries, min(10, a.tries * 2)) if syl else a.tries) if rec else 1)
         for attempt in range(1, ntries + 1):
             g = sherpa_onnx.GenerationConfig(); g.sid = voice; g.speed = float(sp); g.num_steps = a.steps; g.extra = {"lang": "ar"}
